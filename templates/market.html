@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+
+    <h1>{% block title %} Market {% endblock %}</h1>
+    <h3>symbol: {{symbol}}</h3>
+    <h3>len(imports) = {{len_imports}}</h3>
+    <h3>len(exports) = {{len_exports}}</h3>
+
+    <h3>Goods sold here:</h3>
+
+    <table>
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Trade Volume</th>
+        <th>Type</th>
+        <th>Supply</th>
+        <th>Purchase Price</th>
+        <th>Sell Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for good in goods_table %}
+        <tr>
+          <td>{{ good.symbol }}</td>
+          <td>{{ good.tradeVolume }}</td>
+          <td>{{ good.type }}</td>
+          <td>{{ good.supply }}</td>
+          <td>{{ good.purchasePrice }}</td>
+          <td>{{ good.sellPrice }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ship Symbol</th>
+        <th>Trade Symbol</th>
+        <th>Waypoint Symbol</th>
+        <th>Type</th>
+        <th>Units</th>
+        <th>Price/Unit</th>
+        <th>Total Price</th>
+        <th>timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for good in transaction_history %}
+        <tr>
+          <td>{{ good.shipSymbol }}</td>
+          <td>{{ good.tradeSymbol }}</td>
+          <td>{{ good.waypointSymbol }}</td>
+          <td>{{ good.type }}</td>
+          <td>{{ good.units }}</td>
+          <td>{{ good.pricePerUnit }}</td>
+          <td>{{ good.totalPrice }}</td>
+          <td>{{ good.timestamp }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

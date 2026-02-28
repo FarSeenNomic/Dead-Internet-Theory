@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %} DIT {% endblock %}
+
+{% block content %}
+
+, , , , 
+Logged in as {{username}} <b>
+
+<form action="/create" method="POST">
+
+<div><label>Text?</label> <input name="text"  id="text"  value="text" /></div>
+<div><label>Image?</label><input name="image" id="image" value="https://" /></div>
+<div><label>Anon?</label> <input name="anon"  id="anon"  value="Yes" /></div>
+<div>
+<button>Send my greetings</button>
+</div>
+</form>
+
+{% for post in posts %}
+  <div>
+    {{ post.snowflake }} <b/>
+    {{ post.owner }} <b/>
+    {{ post.text }} <b/>
+    {{ post.reply_to }} <b/>
+    {{ post.image }} <b/>
+  </div>
+{% endfor %}
+
+{% endblock %}
