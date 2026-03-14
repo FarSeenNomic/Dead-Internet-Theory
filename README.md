@@ -1,9 +1,6 @@
 # DIT
 
-TODO: Frontend
-TODO: creation + login
-TODO: Restful API
-TODO: Botdevs
+![pylint]()
 
 A demo social media. With API.
 
