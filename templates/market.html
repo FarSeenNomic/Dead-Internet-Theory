@@ -1,64 +1,103 @@
 {% extends 'base.html' %}
+
+{% block title %} Market - DIT {% endblock %}
+
 {% block content %}
+<div class="market-dashboard">
+  <div class="glass-card mb-4">
+    <h2 class="mb-3">Market Overview</h2>
 
-    <h1>{% block title %} Market {% endblock %}</h1>
-    <h3>symbol: {{symbol}}</h3>
-    <h3>len(imports) = {{len_imports}}</h3>
-    <h3>len(exports) = {{len_exports}}</h3>
+    <div
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <div
+        style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+          Active Symbol</div>
+        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">{{symbol}}</div>
+      </div>
+      <div
+        style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Total
+          Imports</div>
+        <div style="font-size: 1.5rem; font-weight: bold;">{{len_imports}}</div>
+      </div>
+      <div
+        style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Total
+          Exports</div>
+        <div style="font-size: 1.5rem; font-weight: bold;">{{len_exports}}</div>
+      </div>
+    </div>
 
-    <h3>Goods sold here:</h3>
+    <h3 class="mb-3" style="color: var(--accent);">Available Goods</h3>
 
-    <table>
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th>Trade Volume</th>
-        <th>Type</th>
-        <th>Supply</th>
-        <th>Purchase Price</th>
-        <th>Sell Price</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for good in goods_table %}
-        <tr>
-          <td>{{ good.symbol }}</td>
-          <td>{{ good.tradeVolume }}</td>
-          <td>{{ good.type }}</td>
-          <td>{{ good.supply }}</td>
-          <td>{{ good.purchasePrice }}</td>
-          <td>{{ good.sellPrice }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <div class="table-container mb-4"
+      style="overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md);">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead style="background: rgba(0,0,0,0.3);">
+          <tr>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Symbol</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Volume</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Type</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Supply</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Buy</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Sell</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for good in goods_table %}
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+            onmouseout="this.style.background='transparent'">
+            <td style="padding: 1rem; font-weight: 600;">{{ good.symbol }}</td>
+            <td style="padding: 1rem;">{{ good.tradeVolume }}</td>
+            <td style="padding: 1rem;"><span
+                style="padding: 0.2rem 0.6rem; border-radius: 20px; background: rgba(99,102,241,0.2); color: var(--primary); font-size: 0.8rem;">{{
+                good.type }}</span></td>
+            <td style="padding: 1rem;">{{ good.supply }}</td>
+            <td style="padding: 1rem; color: #10b981;">${{ good.purchasePrice }}</td>
+            <td style="padding: 1rem; color: #ef4444;">${{ good.sellPrice }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Ship Symbol</th>
-        <th>Trade Symbol</th>
-        <th>Waypoint Symbol</th>
-        <th>Type</th>
-        <th>Units</th>
-        <th>Price/Unit</th>
-        <th>Total Price</th>
-        <th>timestamp</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for good in transaction_history %}
-        <tr>
-          <td>{{ good.shipSymbol }}</td>
-          <td>{{ good.tradeSymbol }}</td>
-          <td>{{ good.waypointSymbol }}</td>
-          <td>{{ good.type }}</td>
-          <td>{{ good.units }}</td>
-          <td>{{ good.pricePerUnit }}</td>
-          <td>{{ good.totalPrice }}</td>
-          <td>{{ good.timestamp }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <h3 class="mb-3" style="color: var(--primary);">Transaction History</h3>
+
+    <div class="table-container"
+      style="overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md);">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead style="background: rgba(0,0,0,0.3);">
+          <tr>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Ship</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Trade</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Waypoint</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Type</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Units</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Price/Unit</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Total</th>
+            <th style="padding: 1rem; border-bottom: 1px solid var(--border);">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for good in transaction_history %}
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+            onmouseout="this.style.background='transparent'">
+            <td style="padding: 1rem;">{{ good.shipSymbol }}</td>
+            <td style="padding: 1rem; font-weight: 500;">{{ good.tradeSymbol }}</td>
+            <td style="padding: 1rem; color: var(--text-muted);">{{ good.waypointSymbol }}</td>
+            <td style="padding: 1rem;">{{ good.type }}</td>
+            <td style="padding: 1rem;">{{ good.units }}</td>
+            <td style="padding: 1rem;">${{ good.pricePerUnit }}</td>
+            <td style="padding: 1rem; font-weight: bold;">${{ good.totalPrice }}</td>
+            <td style="padding: 1rem; font-size: 0.85rem; color: var(--text-muted);">{{ good.timestamp }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -2,16 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %} {% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DIT{% endblock %}</title>
+    <!-- Modern Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <nav>
-        <a href="/">Home</a>
-        <a href="/logout">Logout</a>
+        <div class="nav-content">
+            <a href="/" class="nav-brand">D.I.T.</a>
+            <div class="nav-links">
+                <a href="/">Feed</a>
+                {% if session.get('username') %}
+                    <span class="user-badge" style="color: var(--text-muted); font-size: 0.9rem; margin-right: 1rem;">@{{ session['username'] }}</span>
+                    <a href="/logout" class="btn-primary" style="padding: 0.4rem 1rem;">Logout</a>
+                {% else %}
+                    <a href="/login" class="btn-primary" style="padding: 0.4rem 1rem;">Login</a>
+                {% endif %}
+            </div>
+        </div>
     </nav>
-    <hr>
-    <div class="content">
-        {% block content %} {% endblock %}
-    </div>
+    
+    <main class="app-container">
+        {% block content %}
+        {% endblock %}
+    </main>
 </body>
 </html>
