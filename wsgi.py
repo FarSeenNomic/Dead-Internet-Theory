@@ -1,14 +1,16 @@
-import sqlite3
+import mysql.connector
 import flask
 import time
-import os
 
 def current_milli_time():
     return round(time.time() * 1000)
 
-# Connect to a local SQLite database instead of MySQL
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dit.db')
-cnx = sqlite3.connect(db_path, check_same_thread=False)
+cnx = mysql.connector.connect(
+  host="localhost",
+  user="server",
+  password="234890646",
+  database='CLASS',
+)
 
 wib = flask.Flask(__name__)
 # Set the secret key to some random bytes. Keep this really secret!
@@ -27,32 +29,81 @@ class post():
     self.reply_to = reply_to
     self.image = image
 
-# Setup SQLite Database Tables
+'''
+try:
+  cursor.execute("USE CLASS")
+except mysql.connector.Error as err:
+  cursor.execute("CREATE DATABASE CLASS DEFAULT CHARACTER SET 'utf8'")
+  cursor.execute("USE CLASS")
+  print("using class")
+'''
+
+urlrep = ("URL", "VARCHAR(200) DEFAULT ''")
+
 try:
   cursor.execute("""CREATE TABLE users (
-  snowflake   INTEGER PRIMARY KEY,
-  username    VARCHAR(255) UNIQUE,
+  snowflake   BIGINT,
+  username    VARCHAR(255),
   password    VARCHAR(255) NOT NULL,
   displayname VARCHAR(255),
-  PFP         TEXT DEFAULT '',
-  bio         TEXT,
-  api_key     CHAR(64) NOT NULL
-)""")
-  cnx.commit()
-except sqlite3.Error:
-  pass
+  PFP         URL,
+  bio         TINYTEXT,
+  api_key     CHAR(64) NOT NULL,
+    UNIQUE (username),
+    PRIMARY KEY (snowflake)
+)""".replace(*urlrep))
+except mysql.connector.errors.ProgrammingError:
+  print("users table good.")
 
 try:
   cursor.execute("""CREATE TABLE posts (
-  snowflake     INTEGER PRIMARY KEY,
+  snowflake     BIGINT,
   owner         VARCHAR(255) NOT NULL,
-  text          TEXT,
-  reply_to      INTEGER,
-  image         TEXT DEFAULT ''
-)""")
-  cnx.commit()
-except sqlite3.Error:
-  pass
+  text          TEXT, -- TEXT means not null
+  reply_to      BIGINT,  -- might be a top-level post
+  image         URL,
+    PRIMARY KEY (snowflake),
+    CONSTRAINT FK_reply     FOREIGN KEY (reply_to) REFERENCES posts(snowflake)
+)""".replace(*urlrep))
+except mysql.connector.errors.ProgrammingError:
+  print("posts table good.")
+
+try:
+  cursor.execute("""CREATE TABLE follows (
+  follower      VARCHAR(255),
+  leader        VARCHAR(255),
+  snowflake     BIGINT,
+    PRIMARY KEY (follower, leader),
+    CONSTRAINT FK_follower      FOREIGN KEY (follower) REFERENCES users(username),
+    CONSTRAINT FK_follow_leader FOREIGN KEY (leader)   REFERENCES users(username)
+)""".replace(*urlrep))
+except mysql.connector.errors.ProgrammingError:
+  print("followers table good.")
+
+try:
+  cursor.execute("""CREATE TABLE likes (
+  follower      VARCHAR(255),
+  post          BIGINT,
+    PRIMARY KEY (follower, post),
+    CONSTRAINT FK_likeperson FOREIGN KEY (follower) REFERENCES users(username),
+    CONSTRAINT FK_likepost   FOREIGN KEY (post)     REFERENCES posts(snowflake)
+)""".replace(*urlrep))
+except mysql.connector.errors.ProgrammingError:
+  print("likes table good.")
+
+
+# https://i.redd.it/maes48axh3re1.jpeg
+'''
+cursor.execute("""
+INSERT INTO users
+(snowflake, username, password, displayname, PFP, bio)
+VALUES (%s, %s, %s, %s, %s, %s)""",
+("1", "my_name", "password", None, "http://example.com/", "<ASL>?", )
+)
+'''
+
+# TODO: Seperate API calls from UI calls.
+# keep it restfull
 
 def get_posts():
   qu = cnx.cursor()
@@ -64,14 +115,14 @@ def make_post(owner, text, reply_to, image):
   qu.execute("""
 INSERT INTO posts
 (snowflake, owner, text, reply_to, image)
-VALUES (?, ?, ?, ?, ?)
-""", (current_milli_time(), owner, text, reply_to, image))
+VALUES (%s, %s, %s, %s, %s)
+""", (current_milli_time(), owner, text, reply_to, image, ))
   cnx.commit()
   return True
 
 def get_post(postnum):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE snowflake=? LIMIT 1", (postnum,))
+  qu.execute("SELECT * FROM posts WHERE snowflake=%s LIMIT 1", (postnum,))
   data = qu.fetchone()
   if data:
       return post(*data)
@@ -79,7 +130,7 @@ def get_post(postnum):
 
 def get_sub_posts(postnum):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to=? ORDER BY snowflake", (postnum,))
+  qu.execute("SELECT * FROM posts WHERE reply_to=%s ORDER BY snowflake", (postnum,)) # TODO: recurse?
   return [post(*data) for data in qu.fetchall()]
 
 @wib.route("/")
@@ -87,11 +138,12 @@ def index():
   if 'username' in flask.session:
     return flask.render_template('homepage.html', posts=get_posts(), username=flask.session['username'])
   else:
-    return '<meta http-equiv="refresh" content="0; url=/login" />'
+    return '<a href="/login">You are not logged in</a>'
 
 @wib.route('/login', methods=['GET', 'POST'])
 def login():
-  # Simple login system for demo
+  # TODO: this is not a login system
+  # Doesn't even verify if the username is correct
   if flask.request.method == 'POST':
     flask.session['username'] = flask.request.form['username']
     return flask.redirect(flask.url_for('index'))
@@ -120,4 +172,4 @@ def create_post_route():
 
 @wib.route('/post/<int:post_id>')
 def show_post(post_id):
-  return {"post": get_post(post_id), "replies": get_sub_posts(post_id)}
+  return {"post": get_post(post_id).__dict__ if get_post(post_id) else None, "replies": [p.__dict__ for p in get_sub_posts(post_id)]}
