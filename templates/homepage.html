@@ -1,74 +1,94 @@
 {% extends 'base.html' %}
 
-{% block title %} Feed - DIT {% endblock %}
+{% block title %} DIT {% endblock %}
 
 {% block content %}
 
-<div style="max-width: 600px; margin: 0 auto;">
-
-  <!-- Post Creation Card -->
-  {% if session.get('username') %}
-  <div class="glass-card mb-4" style="padding: 1.5rem;">
-    <form action="/create" method="POST">
-      <div class="form-group mb-2">
-        <textarea name="text" id="text" class="form-control" placeholder="What's on your mind?"></textarea>
-      </div>
-
-      <div class="form-group mb-3" style="display: flex; gap: 1rem;">
-        <div style="flex: 1;">
-          <input type="text" name="image" id="image" class="form-control" placeholder="Image URL (optional)" />
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
-          <input type="checkbox" name="anon" id="anon" value="Yes" />
-          <label for="anon">Post Anonymously</label>
-        </div>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end;">
-        <button type="submit" class="btn-primary">Publish Post</button>
-      </div>
-    </form>
-  </div>
-  {% endif %}
-
-  <!-- Feed Container -->
-  <div class="feed-container">
-    <h3 class="mb-3">Recent Transmissions</h3>
-
-    {% for post in posts %}
-    <div class="post-card">
-      <div class="post-header">
-        <!-- Avatar generator based on first letter -->
-        <div class="avatar">
-          {{ post.owner|string|first|upper if post.owner != 'anonymous' else '?' }}
-        </div>
-        <div class="post-meta">
-          <span class="post-author">{{ post.owner }}</span>
-          <span class="post-id">#{{ post.snowflake }}</span>
-        </div>
-      </div>
-
-      <div class="post-content">{{ post.text }}</div>
-
-      {% if post.image and post.image != 'None' and post.image != '' and post.image != 'https://' %}
-      <div class="post-image">
-        <img src="{{ post.image }}" alt="Post attachment" onerror="this.style.display='none'">
-      </div>
-      {% endif %}
-
-      {% if post.reply_to %}
-      <div
-        style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted);">
-        Replying to: #{{ post.reply_to }}
-      </div>
-      {% endif %}
+    <div class="header-section">
+        <h1>Feed</h1>
+        <p class="subtitle">Logged in as <span style="color: var(--primary-color); font-weight: 600;">@{{username}}</span></p>
     </div>
-    {% else %}
-    <div class="glass-card text-center" style="padding: 3rem;">
-      <p style="color: var(--text-muted);">The void is quiet. Be the first to speak.</p>
+
+    <!-- Create Post Section -->
+    <div class="card create-post-card" style="margin-bottom: 2rem;">
+        <form action="/create" method="POST">
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <textarea 
+                    name="text" 
+                    id="text" 
+                    class="form-control" 
+                    placeholder="What's on your mind?"
+                    rows="3"
+                    required
+                ></textarea>
+            </div>
+            
+            <div class="form-group row" style="display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
+                <div style="flex: 1; display: flex; gap: 1rem; align-items: center;">
+                    <input 
+                        name="image" 
+                        id="image" 
+                        class="form-control form-control-sm" 
+                        placeholder="Image URL (optional)" 
+                    />
+                    
+                    <label class="checkbox-container" style="white-space: nowrap;">
+                        <input type="checkbox" name="anon" id="anon" value="Yes">
+                        <span class="checkmark"></span>
+                        Post Anonymously
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+                    Post
+                </button>
+            </div>
+        </form>
     </div>
-    {% endfor %}
-  </div>
-</div>
+
+    <!-- Feed Section -->
+    <div class="feed-container">
+        {% for post in posts %}
+        <div class="card post-card fade-in">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <!-- Left Column: Avatar -->
+                <div class="post-author-avatar">
+                   {{ post.owner|first|upper }}
+                </div>
+                
+                <!-- Right Column: Content -->
+                <div style="flex: 1; min-width: 0;">
+                    <!-- Author Info -->
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px;">
+                        <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">@{{ post.owner }}</span>
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">· ID: {{ post.snowflake }}</span>
+                    </div>
+                    
+                    <!-- Post Text -->
+                    <div class="post-content">{{ post.text }}</div>
+                    
+                    <!-- Post Image -->
+                    {% if post.image %}
+                    <div class="post-image-container">
+                        <img src="{{ post.image }}" alt="Post image" class="post-image" onerror="this.style.display='none'">
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Optional Reply Info -->
+                    {% if post.reply_to %}
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                            Replying to ID: {{ post.reply_to }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <h3>No posts yet</h3>
+            <p>Be the first to share something with the world.</p>
+        </div>
+        {% endfor %}
+    </div>
 
 {% endblock %}
