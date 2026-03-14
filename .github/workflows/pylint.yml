@@ -1,4 +1,12 @@
-- uses: Silleellie/pylint-github-action@v2.1
-  with:
-    lint-path: src
-    python-version: 3.11
+name: Pylint
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: Silleellie/pylint-github-action@v2.1
+      with:
+        lint-path: wsgi.py
+        python-version: 3.13
