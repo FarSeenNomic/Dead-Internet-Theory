@@ -1,9 +1,6 @@
 # DIT
-
-TODO: Frontend
-TODO: creation + login
-TODO: Restful API
-TODO: Botdevs
+ 
+![pylint](https://img.shields.io/badge/PyLint-0.00-red?logo=python&logoColor=white)
 
 A demo social media. With API.
 

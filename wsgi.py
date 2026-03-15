@@ -42,7 +42,7 @@ urlrep = ("URL", "VARCHAR(200) DEFAULT ''")
 
 try:
   cursor.execute("""CREATE TABLE users (
-  snowflake   BIGINT,
+  snowflake   INT,
   username    VARCHAR(255),
   password    VARCHAR(255) NOT NULL,
   displayname VARCHAR(255),
@@ -57,12 +57,13 @@ except mysql.connector.errors.ProgrammingError:
 
 try:
   cursor.execute("""CREATE TABLE posts (
-  snowflake     BIGINT,
-  owner         VARCHAR(255) NOT NULL,
+  snowflake     INT,
+  owner         INT NOT NULL,
   text          TEXT, -- TEXT means not null
-  reply_to      BIGINT,  -- might be a top-level post
+  reply_to      INT,  -- might be a top-level post
   image         URL,
     PRIMARY KEY (snowflake),
+    CONSTRAINT FK_postOwner FOREIGN KEY (owner)    REFERENCES users(snowflake),
     CONSTRAINT FK_reply     FOREIGN KEY (reply_to) REFERENCES posts(snowflake)
 )""".replace(*urlrep))
 except mysql.connector.errors.ProgrammingError:
@@ -70,22 +71,22 @@ except mysql.connector.errors.ProgrammingError:
 
 try:
   cursor.execute("""CREATE TABLE follows (
-  follower      VARCHAR(255),
-  leader        VARCHAR(255),
-  snowflake     BIGINT,
+  follower      INT,
+  leader        INT,
+  snowflake     INT,
     PRIMARY KEY (follower, leader),
-    CONSTRAINT FK_follower      FOREIGN KEY (follower) REFERENCES users(username),
-    CONSTRAINT FK_follow_leader FOREIGN KEY (leader)   REFERENCES users(username)
+    CONSTRAINT FK_follower      FOREIGN KEY (follower) REFERENCES users(snowflake),
+    CONSTRAINT FK_follow_leader FOREIGN KEY (leader)   REFERENCES users(snowflake)
 )""".replace(*urlrep))
 except mysql.connector.errors.ProgrammingError:
   print("followers table good.")
 
 try:
   cursor.execute("""CREATE TABLE likes (
-  follower      VARCHAR(255),
-  post          BIGINT,
+  follower      INT,
+  post          INT,
     PRIMARY KEY (follower, post),
-    CONSTRAINT FK_likeperson FOREIGN KEY (follower) REFERENCES users(username),
+    CONSTRAINT FK_likeperson FOREIGN KEY (follower) REFERENCES users(snowflake),
     CONSTRAINT FK_likepost   FOREIGN KEY (post)     REFERENCES posts(snowflake)
 )""".replace(*urlrep))
 except mysql.connector.errors.ProgrammingError:
@@ -107,8 +108,8 @@ VALUES (%s, %s, %s, %s, %s, %s)""",
 
 def get_posts():
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to IS NULL ORDER BY snowflake DESC LIMIT 15")
-  return [post(*data) for data in qu.fetchall()]
+  qu.execute("SELECT * FROM posts WHERE reply_to=null ORDER BY snowflake LIMIT 15")
+  return [post(*data) for data in qu]
 
 def make_post(owner, text, reply_to, image):
   qu = cnx.cursor()
@@ -117,21 +118,19 @@ INSERT INTO posts
 (snowflake, owner, text, reply_to, image)
 VALUES (%s, %s, %s, %s, %s)
 """, (current_milli_time(), owner, text, reply_to, image, ))
-  cnx.commit()
-  return True
+  print(qu)
+  print(list(qu))
+  return next(qu) # TODO SOON
 
 def get_post(postnum):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE snowflake=%s LIMIT 1", (postnum,))
-  data = qu.fetchone()
-  if data:
-      return post(*data)
-  return None
+  qu.execute("SELECT * FROM posts WHERE snowflake=% LIMIT 1", (postnum,))
+  return post(*next(qu))
 
 def get_sub_posts(postnum):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to=%s ORDER BY snowflake", (postnum,)) # TODO: recurse?
-  return [post(*data) for data in qu.fetchall()]
+  qu.execute("SELECT * FROM posts WHERE reply_to=% ORDER BY snowflake", (postnum,)) # TODO: recurse?
+  return [post(*data) for data in qu]
 
 @wib.route("/")
 def index():
@@ -156,20 +155,19 @@ def logout():
     return flask.redirect(flask.url_for('index'))
 
 @wib.route('/create', methods=['GET', 'POST'])
-def create_post_route():
+def make_post():
   if flask.request.method == 'GET':
     return flask.redirect(flask.url_for('index'))
 
-  owner = flask.session.get('username', 'anonymous')
-  if flask.request.form.get('anon'):
+  owner = flask.session['username']
+  if flask.request.form.anon:
     owner = "anonymous"
 
-  text = flask.request.form.get("text", "")
-  image = flask.request.form.get("image", "")
+  make_post(owner, flask.request.form["text"], None, None) # TODO SOON
 
-  make_post(owner, text, None, image)
-  return flask.redirect(flask.url_for('index'))
+  return f"Didn't made post '{flask.request.form}'!"
 
 @wib.route('/post/<int:post_id>')
 def show_post(post_id):
-  return {"post": get_post(post_id).__dict__ if get_post(post_id) else None, "replies": [p.__dict__ for p in get_sub_posts(post_id)]}
+  assert typeof(post_id, int)
+  return [get_post(post_id), get_sub_posts(post_id)]
