@@ -4,27 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}DIT{% endblock %}</title>
-    <!-- Modern Font: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Custom Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <nav>
-        <div class="nav-content">
-            <a href="/" class="nav-brand">D.I.T.</a>
-            <div class="nav-links">
-                <a href="/">Feed</a>
-                <a href="/logout" class="btn-primary" style="padding: 0.4rem 1rem;">Logout</a>
-            </div>
+    <nav class="navbar">
+        <div class="nav-brand">DIT</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            {% if request.path != '/login' %}
+            <a href="/logout" class="nav-link">Logout</a>
+            {% endif %}
         </div>
     </nav>
-    
-    <main class="app-container">
+    <div class="content-container">
         {% block content %}
         {% endblock %}
-    </main>
+    </div>
 </body>
 </html>
