@@ -101,14 +101,17 @@ except mysql.connector.errors.ProgrammingError:
 
 
 # https://i.redd.it/maes48axh3re1.jpeg
-'''
-cursor.execute("""
-INSERT INTO users
-(snowflake, username, password, displayname, PFP, bio)
-VALUES (%s, %s, %s, %s, %s, %s)""",
-("1", "my_name", "password", None, "http://example.com/", "<ASL>?", )
-)
-'''
+
+def create_user(nam, pas):
+  qu = cnx.cursor()
+  time = current_milli_time()
+  qu.execute("""
+    INSERT INTO users
+    (snowflake, username, password, displayname, PFP, bio)
+    VALUES (%s, %s, %s, %s, %s, %s)""",
+    (time, nam, pas, None, "/noPFP.jpg", "<ASL>? DTF.", )
+  )
+  return time
 
 # TODO: Seperate API calls from UI calls.
 # keep it restfull
@@ -139,23 +142,39 @@ def get_sub_posts(postnum):
   return [post(*data) for data in qu]
 
 @wib.route("/")
-def index():
+def index_pagehandle():
   if 'username' in flask.session:
     return flask.render_template('homepage.html', posts=get_posts(), username=flask.session['username'])
   else:
     return '<a href="/login">You are not logged in</a>'
 
 @wib.route('/login', methods=['GET', 'POST'])
-def login():
-  # TODO: this is not a login system
-  # Doesn't even verify if the username is correct
-  if flask.request.method == 'POST':
-    flask.session['username'] = flask.request.form['username']
-    return flask.redirect(flask.url_for('index'))
-  return flask.render_template('login.html')
+def login_pagehandle():
+  if flask.request.method == 'GET':
+    return flask.render_template('login.html')
+  qu = cnx.cursor()
+  qu.execute("SELECT username FROM USERS WHERE USERNAME=% AND PASSWORD=%", (flask.request.form['username'], flask.request.form['password'], ))
+  for usan in qu:
+    flask.session['username'] = usan
+  return flask.redirect(flask.url_for('index'))
+
+@wib.route('/register', methods=['GET', 'POST'])
+def register_pagehandle():
+  if flask.request.method == 'GET':
+    return flask.render_template('register.html')
+  username_try = flask.request.form['username']
+  password_try = flask.request.form['password']
+
+  # database verifies unique.
+  assert username_try.startswith("@")
+
+  assert 6 <= len(password_try) <= 128
+
+  create_user(username_try, password_try.encode("UTF8").hex()) # might throw error?
+  return flask.redirect(flask.url_for('login'))
 
 @wib.route('/logout')
-def logout():
+def logout_pagehandle():
     # remove the username from the flask.session if it's there
     flask.session.pop('username', None)
     return flask.redirect(flask.url_for('index'))
@@ -163,7 +182,7 @@ def logout():
 _db_make_post = make_post
 
 @wib.route('/create', methods=['GET', 'POST'])
-def make_post():
+def create_pagehandle():
   if flask.request.method == 'GET':
     return flask.redirect(flask.url_for('index'))
 
@@ -176,8 +195,8 @@ def make_post():
   return flask.redirect(flask.url_for('index'))
 
 @wib.route('/post/<int:post_id>')
-def show_post(post_id):
-  assert typeof(post_id, int)
+def show_post_pagehandle(post_id):
+  #assert typeof(post_id, int)
   return [get_post(post_id), get_sub_posts(post_id)]
 
 @wib.route('/reboot', methods=['GET', 'POST'])
