@@ -7,7 +7,7 @@ def current_milli_time():
     return round(time.time() * 1000)
 
 config = configparser.ConfigParser()
-config.read('example.ini')
+config.read('settings.ini')
 
 if 'DEFAULT' not in config:
   print("config not found")
