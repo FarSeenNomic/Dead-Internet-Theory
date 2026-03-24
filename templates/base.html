@@ -2,16 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %} {% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DIT{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/logout">Logout</a>
+    <nav class="navbar">
+        <div class="nav-brand">DIT</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            {% if request.path != '/login' %}
+            <a href="/logout" class="nav-link">Logout</a>
+            {% endif %}
+        </div>
     </nav>
-    <hr>
-    <div class="content">
-        {% block content %} {% endblock %}
+    <div class="content-container">
+        {% block content %}
+        {% endblock %}
     </div>
 </body>
 </html>

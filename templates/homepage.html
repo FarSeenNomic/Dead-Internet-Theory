@@ -1,30 +1,55 @@
 {% extends 'base.html' %}
 
-{% block title %} DIT {% endblock %}
+{% block title %} DIT - Feed {% endblock %}
 
 {% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Compose Post</h3>
+        <span class="post-id">Logged in as @{{ username }}</span>
+    </div>
+    <form action="/create" method="POST">
+        <div class="form-group">
+            <label for="text">What's on your mind?</label>
+            <input type="text" name="text" id="text" class="form-control" placeholder="Type your message here..."
+                required autofocus />
+        </div>
 
-, , , , 
-Logged in as {{username}} <b>
+        <div class="form-group">
+            <label for="image">Image URL (optional)</label>
+            <input type="url" name="image" id="image" class="form-control" placeholder="https://" />
+        </div>
 
-<form action="/create" method="POST">
+        <div class="checkbox-group">
+            <input type="checkbox" name="anon" id="anon" value="Yes" />
+            <label for="anon">Post Anonymously</label>
+        </div>
 
-<div><label>Text?</label> <input name="text"  id="text"  value="text" /></div>
-<div><label>Image?</label><input name="image" id="image" value="https://" /></div>
-<div><label>Anon?</label> <input name="anon"  id="anon"  value="Yes" /></div>
-<div>
-<button>Send my greetings</button>
+        <button type="submit" class="btn">Send'dit</button>
+    </form>
 </div>
-</form>
 
-{% for post in posts %}
-  <div>
-    {{ post.snowflake }} <b/>
-    {{ post.owner }} <b/>
-    {{ post.text }} <b/>
-    {{ post.reply_to }} <b/>
-    {{ post.image }} <b/>
-  </div>
-{% endfor %}
-
+<div class="feed">
+    {% for post in posts %}
+    <div class="card post-card">
+        <div class="post-meta">
+            <div class="post-author">@{{ post.owner }}</div>
+            <div class="post-id">#{{ post.snowflake }}</div>
+            {% if post.reply_to %}
+            <span class="post-id">&bull; Replying to #{{ post.reply_to }}</span>
+            {% endif %}
+        </div>
+        <div class="post-text">
+            {{ post.text }}
+        </div>
+        {% if post.image and post.image != 'None' and post.image != '' %}
+        <img src="{{ post.image }}" alt="Post attachment" class="post-image" onerror="this.style.display='none'">
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; color: var(--text-secondary);">
+        <p>No posts yet. Be the first to say something!</p>
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}

@@ -1,20 +1,27 @@
 import mysql.connector
 import flask
 import time
+import configparser
 
 def current_milli_time():
     return round(time.time() * 1000)
 
+config = configparser.ConfigParser()
+config.read('settings.ini')
+
+if 'DEFAULT' not in config:
+  print("config not found")
+  exit()
+
 cnx = mysql.connector.connect(
-  host="localhost",
-  user="server",
-  password="234890646",
-  database='CLASS',
+  host=config['DEFAULT']['host'],
+  user=config['DEFAULT']['user'],
+  password=config['DEFAULT']['password'],
+  database=config['DEFAULT']['database'],
 )
 
 wib = flask.Flask(__name__)
-# Set the secret key to some random bytes. Keep this really secret!
-wib.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+wib.secret_key = config['DEFAULT']['sercret']
 
 cursor = cnx.cursor()
 
@@ -38,7 +45,7 @@ except mysql.connector.Error as err:
   print("using class")
 '''
 
-urlrep = ("URL", "VARCHAR(200) DEFAULT ''")
+urlrep = ("URL", "VARCHAR(1000) DEFAULT ''")
 
 try:
   cursor.execute("""CREATE TABLE users (
@@ -111,7 +118,7 @@ def create_user(nam, pas):
 
 def get_posts():
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to=null ORDER BY snowflake LIMIT 15")
+  qu.execute("SELECT * FROM posts WHERE reply_to IS NULL ORDER BY snowflake DESC LIMIT 15")
   return [post(*data) for data in qu]
 
 def make_post(owner, text, reply_to, image):
@@ -121,9 +128,8 @@ INSERT INTO posts
 (snowflake, owner, text, reply_to, image)
 VALUES (%s, %s, %s, %s, %s)
 """, (current_milli_time(), owner, text, reply_to, image, ))
-  print(qu)
-  print(list(qu))
-  return next(qu) # TODO SOON
+  cnx.commit()
+  return True
 
 def get_post(postnum):
   qu = cnx.cursor()
@@ -173,20 +179,32 @@ def logout_pagehandle():
     flask.session.pop('username', None)
     return flask.redirect(flask.url_for('index'))
 
+_db_make_post = make_post
+
 @wib.route('/create', methods=['GET', 'POST'])
 def create_pagehandle():
   if flask.request.method == 'GET':
     return flask.redirect(flask.url_for('index'))
 
   owner = flask.session['username']
-  if flask.request.form.anon:
+  if flask.request.form.get('anon'):
     owner = "anonymous"
 
-  make_post(owner, flask.request.form["text"], None, None) # TODO SOON
+  _db_make_post(owner, flask.request.form["text"], None, flask.request.form.get("image")) # TODO SOON
 
-  return f"Didn't made post '{flask.request.form}'!"
+  return flask.redirect(flask.url_for('index'))
 
 @wib.route('/post/<int:post_id>')
 def show_post_pagehandle(post_id):
   #assert typeof(post_id, int)
   return [get_post(post_id), get_sub_posts(post_id)]
+
+@wib.route('/reboot', methods=['GET', 'POST'])
+def reboot():
+  """
+  Used for exiting the wsgi interface, allowing code to resume
+  """
+  if flask.request.method == 'POST':
+    if hash.md5(flask.request.form['REBOOTCODE']) == "3DA5DAC093EFA65422CBB22AF4588C65":
+      exit()
+  return '<form method="post"><p><input type=text name=REBOOTCODE><p><input type=submit value=REBOOT></form>'
