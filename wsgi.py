@@ -1,20 +1,27 @@
 import mysql.connector
 import flask
 import time
+import configparser
 
 def current_milli_time():
     return round(time.time() * 1000)
 
+config = configparser.ConfigParser()
+config.read('example.ini')
+
+if 'DEFAULT' not in config:
+  print("config not found")
+  exit()
+
 cnx = mysql.connector.connect(
-  host="localhost",
-  user="server",
-  password="234890646",
-  database='CLASS',
+  host=config['DEFAULT']['host'],
+  user=config['DEFAULT']['user'],
+  password=config['DEFAULT']['password'],
+  database=config['DEFAULT']['database'],
 )
 
 wib = flask.Flask(__name__)
-# Set the secret key to some random bytes. Keep this really secret!
-wib.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+wib.secret_key = config['DEFAULT']['sercret']
 
 cursor = cnx.cursor()
 
