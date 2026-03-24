@@ -1,24 +1,36 @@
-import mysql.connector
 import flask
 import time
 import configparser
+
+DEBUG_MODE = False
+
+if DEBUG_MODE:
+  import sqlite3
+  mysql = lambda _:_
+  mysql.connector = mysql
+  mysql.connector.errors = mysql
+  mysql.connector.errors.ProgrammingError = sqlite3.OperationalError
+  replchar = "?"
+else:
+  import mysql.connector
+  replchar = "%s"
 
 def current_milli_time():
     return round(time.time() * 1000)
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
+print(config['DEFAULT']['host'])
 
-if 'DEFAULT' not in config:
-  print("config not found")
-  exit()
-
-cnx = mysql.connector.connect(
-  host=config['DEFAULT']['host'],
-  user=config['DEFAULT']['user'],
-  password=config['DEFAULT']['password'],
-  database=config['DEFAULT']['database'],
-)
+if DEBUG_MODE:
+  cnx = sqlite3.connect(":memory:", check_same_thread=False)
+else:
+  cnx = mysql.connector.connect(
+    host=config['DEFAULT']['host'],
+    user=config['DEFAULT']['user'],
+    password=config['DEFAULT']['password'],
+    database=config['DEFAULT']['database'],
+  )
 
 wib = flask.Flask(__name__)
 wib.secret_key = config['DEFAULT']['sercret']
@@ -49,56 +61,59 @@ urlrep = ("URL", "VARCHAR(1000) DEFAULT ''")
 
 try:
   cursor.execute("""CREATE TABLE users (
-  snowflake   INT,
+  snowflake   BIGINT,
   username    VARCHAR(255),
   password    VARCHAR(255) NOT NULL,
   displayname VARCHAR(255),
   PFP         URL,
   bio         TINYTEXT,
-  api_key     CHAR(64) NOT NULL,
+  api_key     CHAR(64),
     UNIQUE (username),
     PRIMARY KEY (snowflake)
 )""".replace(*urlrep))
+  print("users table created.")
 except mysql.connector.errors.ProgrammingError:
-  print("users table good.")
+  print("users table exists.")
 
 try:
   cursor.execute("""CREATE TABLE posts (
-  snowflake     INT,
-  owner         INT NOT NULL,
-  text          TEXT, -- TEXT means not null
-  reply_to      INT,  -- might be a top-level post
-  image         URL,
+  snowflake       BIGINT,
+  owner_snowflake BIGINT NOT NULL,
+  text            VARCHAR(140),
+  reply_to        BIGINT,  -- might be a top-level post
+  image           URL,
     PRIMARY KEY (snowflake),
-    CONSTRAINT FK_postOwner FOREIGN KEY (owner)    REFERENCES users(snowflake),
-    CONSTRAINT FK_reply     FOREIGN KEY (reply_to) REFERENCES posts(snowflake)
+    CONSTRAINT FK_postOwner FOREIGN KEY (owner_snowflake) REFERENCES users(snowflake),
+    CONSTRAINT FK_reply     FOREIGN KEY (reply_to)        REFERENCES posts(snowflake)
 )""".replace(*urlrep))
+  print("posts table created.")
 except mysql.connector.errors.ProgrammingError:
-  print("posts table good.")
+  print("posts table exists.")
 
 try:
   cursor.execute("""CREATE TABLE follows (
-  follower      INT,
-  leader        INT,
-  snowflake     INT,
+  follower      BIGINT,
+  leader        BIGINT,
+  snowflake     BIGINT,
     PRIMARY KEY (follower, leader),
     CONSTRAINT FK_follower      FOREIGN KEY (follower) REFERENCES users(snowflake),
     CONSTRAINT FK_follow_leader FOREIGN KEY (leader)   REFERENCES users(snowflake)
 )""".replace(*urlrep))
+  print("followers table created.")
 except mysql.connector.errors.ProgrammingError:
-  print("followers table good.")
+  print("followers table exists.")
 
 try:
   cursor.execute("""CREATE TABLE likes (
-  follower      INT,
-  post          INT,
+  follower      BIGINT,
+  post          BIGINT,
     PRIMARY KEY (follower, post),
     CONSTRAINT FK_likeperson FOREIGN KEY (follower) REFERENCES users(snowflake),
     CONSTRAINT FK_likepost   FOREIGN KEY (post)     REFERENCES posts(snowflake)
 )""".replace(*urlrep))
+  print("likes table created.")
 except mysql.connector.errors.ProgrammingError:
-  print("likes table good.")
-
+  print("likes table exists.")
 
 # https://i.redd.it/maes48axh3re1.jpeg
 
@@ -108,13 +123,10 @@ def create_user(nam, pas):
   qu.execute("""
     INSERT INTO users
     (snowflake, username, password, displayname, PFP, bio)
-    VALUES (%s, %s, %s, %s, %s, %s)""",
-    (time, nam, pas, None, "/noPFP.jpg", "<ASL>? DTF.", )
+    VALUES (%s, %s, %s, %s, %s, %s)""".replace("%s", replchar),
+    (time, nam, pas.encode("UTF8").hex(), None, "/noPFP.jpg", "<ASL>? DTF.", )
   )
   return time
-
-# TODO: Seperate API calls from UI calls.
-# keep it restfull
 
 def get_posts():
   qu = cnx.cursor()
@@ -125,20 +137,20 @@ def make_post(owner, text, reply_to, image):
   qu = cnx.cursor()
   qu.execute("""
 INSERT INTO posts
-(snowflake, owner, text, reply_to, image)
+(snowflake, owner_snowflake, text, reply_to, image)
 VALUES (%s, %s, %s, %s, %s)
-""", (current_milli_time(), owner, text, reply_to, image, ))
+""".replace("%s", replchar), (current_milli_time(), owner, text, reply_to, image, ))
   cnx.commit()
   return True
 
 def get_post(postnum):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE snowflake=% LIMIT 1", (postnum,))
+  qu.execute("SELECT * FROM posts WHERE snowflake=%s LIMIT 1".replace("%s", replchar), (postnum,))
   return post(*next(qu))
 
 def get_sub_posts(postnum):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to=% ORDER BY snowflake", (postnum,)) # TODO: recurse?
+  qu.execute("SELECT * FROM posts WHERE reply_to=%s ORDER BY snowflake".replace("%s", replchar), (postnum,)) # TODO: recurse?
   return [post(*data) for data in qu]
 
 @wib.route("/")
@@ -153,46 +165,52 @@ def login_pagehandle():
   if flask.request.method == 'GET':
     return flask.render_template('login.html')
   qu = cnx.cursor()
-  qu.execute("SELECT username FROM USERS WHERE USERNAME=% AND PASSWORD=%", (flask.request.form['username'], flask.request.form['password'], ))
-  for usan in qu:
-    flask.session['username'] = usan
-  return flask.redirect(flask.url_for('index'))
+  print( flask.request.form )
+  qu.execute("SELECT snowflake, username FROM users WHERE USERNAME=%s AND PASSWORD=%s".replace("%s", replchar),
+    (flask.request.form.get('username'), flask.request.form.get('password', '').encode("UTF8").hex(), ))
+  for snowflake, username in qu:
+    flask.session['snowflake'] = snowflake
+    flask.session['username'] = username
+    return flask.redirect(flask.url_for('index_pagehandle'))
+  return flask.render_template('login.html', errror="bad info")
 
 @wib.route('/register', methods=['GET', 'POST'])
 def register_pagehandle():
   if flask.request.method == 'GET':
     return flask.render_template('register.html')
-  username_try = flask.request.form['username']
-  password_try = flask.request.form['password']
+  username_try = flask.request.form.get('username')
+  password_try = flask.request.form.get('password')
 
   # database verifies unique.
-  assert username_try.startswith("@")
+  try:
+    assert username_try.startswith("@")
+    assert 6 <= len(password_try) <= 128
+  except:
+    return flask.render_template('register.html', errror="bad info")
 
-  assert 6 <= len(password_try) <= 128
-
-  create_user(username_try, password_try.encode("UTF8").hex()) # might throw error?
-  return flask.redirect(flask.url_for('login'))
+  print( username_try, password_try.encode("UTF8").hex() )
+  create_user(username_try, password_try) # might throw error?
+  return flask.redirect(flask.url_for('login_pagehandle'))
 
 @wib.route('/logout')
 def logout_pagehandle():
     # remove the username from the flask.session if it's there
     flask.session.pop('username', None)
-    return flask.redirect(flask.url_for('index'))
-
-_db_make_post = make_post
+    return flask.redirect(flask.url_for('index_pagehandle'))
 
 @wib.route('/create', methods=['GET', 'POST'])
 def create_pagehandle():
   if flask.request.method == 'GET':
-    return flask.redirect(flask.url_for('index'))
+    return flask.redirect(flask.url_for('index_pagehandle'))
 
-  owner = flask.session['username']
+  owner = flask.session['snowflake']
   if flask.request.form.get('anon'):
-    owner = "anonymous"
+    owner = 0
+  print(owner)
 
-  _db_make_post(owner, flask.request.form["text"], None, flask.request.form.get("image")) # TODO SOON
+  make_post(owner, flask.request.form.get("text", ""), None, flask.request.form.get("image", ""))
 
-  return flask.redirect(flask.url_for('index'))
+  return flask.redirect(flask.url_for('index_pagehandle'))
 
 @wib.route('/post/<int:post_id>')
 def show_post_pagehandle(post_id):
@@ -200,11 +218,14 @@ def show_post_pagehandle(post_id):
   return [get_post(post_id), get_sub_posts(post_id)]
 
 @wib.route('/reboot', methods=['GET', 'POST'])
-def reboot():
+def reboot_pagehandle():
   """
   Used for exiting the wsgi interface, allowing code to resume
   """
   if flask.request.method == 'POST':
-    if hash.md5(flask.request.form['REBOOTCODE']) == "3DA5DAC093EFA65422CBB22AF4588C65":
-      exit()
+    import hashlib, os, signal
+    m = hashlib.md5()
+    m.update(flask.request.form.get('REBOOTCODE').encode())
+    if m.hexdigest().upper() == "3DA5DAC093EFA65422CBB22AF4588C65":
+      os.kill(os.getpid(), signal.SIGINT)
   return '<form method="post"><p><input type=text name=REBOOTCODE><p><input type=submit value=REBOOT></form>'

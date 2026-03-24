@@ -8,7 +8,7 @@ while true; do
     git pull || echo "Git pull failed"
 
     echo "Starting Flask..."
-    flask run || echo "Flask exited"
+    python3 -m flask run --host 0.0.0.0 || echo "Flask exited"
 
     echo "Restarting in 3 seconds..."
     sleep 3
