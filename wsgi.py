@@ -172,3 +172,13 @@ def make_post():
 def show_post(post_id):
   assert typeof(post_id, int)
   return [get_post(post_id), get_sub_posts(post_id)]
+
+@wib.route('/reboot', methods=['GET', 'POST'])
+def reboot():
+  """
+  Used for exiting the wsgi interface, allowing code to resume
+  """
+  if flask.request.method == 'POST':
+    if hash.md5(flask.request.form['REBOOTCODE']) == "3DA5DAC093EFA65422CBB22AF4588C65":
+      exit()
+  return '<form method="post"><p><input type=text name=REBOOTCODE><p><input type=submit value=REBOOT></form>'
