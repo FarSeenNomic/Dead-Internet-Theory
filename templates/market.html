@@ -1,64 +1,78 @@
 {% extends 'base.html' %}
+
+{% block title %} Market {% endblock %}
+
 {% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-weight: 800; margin-bottom: 0.5rem;">Market Overview</h1>
+    <div style="display: flex; gap: 1rem; color: var(--text-secondary);">
+        <span class="card" style="padding: 0.5rem 1rem; margin: 0;">Symbol: <strong>{{symbol}}</strong></span>
+        <span class="card" style="padding: 0.5rem 1rem; margin: 0;">Imports: <strong>{{len_imports}}</strong></span>
+        <span class="card" style="padding: 0.5rem 1rem; margin: 0;">Exports: <strong>{{len_exports}}</strong></span>
+    </div>
+</div>
 
-    <h1>{% block title %} Market {% endblock %}</h1>
-    <h3>symbol: {{symbol}}</h3>
-    <h3>len(imports) = {{len_imports}}</h3>
-    <h3>len(exports) = {{len_exports}}</h3>
-
-    <h3>Goods sold here:</h3>
-
+<h3 style="margin-bottom: 1rem;">Goods sold here</h3>
+<div class="table-container">
     <table>
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th>Trade Volume</th>
-        <th>Type</th>
-        <th>Supply</th>
-        <th>Purchase Price</th>
-        <th>Sell Price</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for good in goods_table %}
-        <tr>
-          <td>{{ good.symbol }}</td>
-          <td>{{ good.tradeVolume }}</td>
-          <td>{{ good.type }}</td>
-          <td>{{ good.supply }}</td>
-          <td>{{ good.purchasePrice }}</td>
-          <td>{{ good.sellPrice }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Trade Volume</th>
+                <th>Type</th>
+                <th>Supply</th>
+                <th>Purchase Price</th>
+                <th>Sell Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for good in goods_table %}
+            <tr>
+                <td><strong>{{ good.symbol }}</strong></td>
+                <td>{{ good.tradeVolume }}</td>
+                <td><span style="padding: 0.25rem 0.5rem; background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border-radius: 999px; font-size: 0.75rem;">{{ good.type }}</span></td>
+                <td>{{ good.supply }}</td>
+                <td style="color: var(--danger);">${{ good.purchasePrice }}</td>
+                <td style="color: #10b981;">${{ good.sellPrice }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align: center;">No goods data available</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Ship Symbol</th>
-        <th>Trade Symbol</th>
-        <th>Waypoint Symbol</th>
-        <th>Type</th>
-        <th>Units</th>
-        <th>Price/Unit</th>
-        <th>Total Price</th>
-        <th>timestamp</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for good in transaction_history %}
-        <tr>
-          <td>{{ good.shipSymbol }}</td>
-          <td>{{ good.tradeSymbol }}</td>
-          <td>{{ good.waypointSymbol }}</td>
-          <td>{{ good.type }}</td>
-          <td>{{ good.units }}</td>
-          <td>{{ good.pricePerUnit }}</td>
-          <td>{{ good.totalPrice }}</td>
-          <td>{{ good.timestamp }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<h3 style="margin-bottom: 1rem;">Transaction History</h3>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Ship Symbol</th>
+                <th>Trade Symbol</th>
+                <th>Waypoint Symbol</th>
+                <th>Type</th>
+                <th>Units</th>
+                <th>Price/Unit</th>
+                <th>Total Price</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for good in transaction_history %}
+            <tr>
+                <td>{{ good.shipSymbol }}</td>
+                <td><strong>{{ good.tradeSymbol }}</strong></td>
+                <td>{{ good.waypointSymbol }}</td>
+                <td>{{ good.type }}</td>
+                <td>{{ good.units }}</td>
+                <td>${{ good.pricePerUnit }}</td>
+                <td><strong>${{ good.totalPrice }}</strong></td>
+                <td style="color: var(--text-secondary); font-size: 0.875rem;">{{ good.timestamp }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align: center;">No transaction history available</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

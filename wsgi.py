@@ -45,7 +45,7 @@ except mysql.connector.Error as err:
   print("using class")
 '''
 
-urlrep = ("URL", "VARCHAR(200) DEFAULT ''")
+urlrep = ("URL", "VARCHAR(1000) DEFAULT ''")
 
 try:
   cursor.execute("""CREATE TABLE users (
@@ -115,7 +115,7 @@ VALUES (%s, %s, %s, %s, %s, %s)""",
 
 def get_posts():
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to=null ORDER BY snowflake LIMIT 15")
+  qu.execute("SELECT * FROM posts WHERE reply_to IS NULL ORDER BY snowflake DESC LIMIT 15")
   return [post(*data) for data in qu]
 
 def make_post(owner, text, reply_to, image):
@@ -125,9 +125,8 @@ INSERT INTO posts
 (snowflake, owner, text, reply_to, image)
 VALUES (%s, %s, %s, %s, %s)
 """, (current_milli_time(), owner, text, reply_to, image, ))
-  print(qu)
-  print(list(qu))
-  return next(qu) # TODO SOON
+  cnx.commit()
+  return True
 
 def get_post(postnum):
   qu = cnx.cursor()
@@ -161,18 +160,20 @@ def logout():
     flask.session.pop('username', None)
     return flask.redirect(flask.url_for('index'))
 
+_db_make_post = make_post
+
 @wib.route('/create', methods=['GET', 'POST'])
 def make_post():
   if flask.request.method == 'GET':
     return flask.redirect(flask.url_for('index'))
 
   owner = flask.session['username']
-  if flask.request.form.anon:
+  if flask.request.form.get('anon'):
     owner = "anonymous"
 
-  make_post(owner, flask.request.form["text"], None, None) # TODO SOON
+  _db_make_post(owner, flask.request.form["text"], None, flask.request.form.get("image")) # TODO SOON
 
-  return f"Didn't made post '{flask.request.form}'!"
+  return flask.redirect(flask.url_for('index'))
 
 @wib.route('/post/<int:post_id>')
 def show_post(post_id):
