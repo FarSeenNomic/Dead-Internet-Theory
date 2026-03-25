@@ -1,6 +1,6 @@
 # DIT
  
-![pylint](https://img.shields.io/badge/PyLint-0.08-red?logo=python&logoColor=white)
+![pylint](https://img.shields.io/badge/PyLint-0.00-red?logo=python&logoColor=white)
 
 A demo social media. With API.
 
