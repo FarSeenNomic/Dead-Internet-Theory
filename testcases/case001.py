@@ -3,20 +3,23 @@ import requests
 
 # API Create account
 
-requests.Session()
+s = requests.Session()
 
 form_data = {
-    "username": "example_user",
+    "username": "example_user2",
     "password": "password"
 }
 
-s.post("http://localhost/register", data=form_data)
+print("register")
+response = s.post("http://localhost:5000/register", data=form_data)
 assert response.status_code == 200
 
-s.post("http://localhost/login", data=form_data)
+print("login")
+response = s.post("http://localhost:5000/login", data=form_data)
 assert response.status_code == 200
 
-s.post("http://localhost/create", data={"text": "butts"})
+print("create")
+response = s.post("http://localhost:5000/create", data={"text": "butts"})
 assert response.status_code == 200
 
 # API Login and get API key
