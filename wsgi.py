@@ -136,6 +136,13 @@ def get_posts():
   qu.execute("SELECT * FROM posts WHERE reply_to IS NULL ORDER BY snowflake DESC LIMIT 15")
   return [post(*data) for data in qu]
 
+def get_posts_by_username(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
+                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
+                WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
+  return [post(*data) for data in qu]
+
 def make_post(owner, text, reply_to, image):
   qu = cnx.cursor()
   qu.execute("""
@@ -145,6 +152,25 @@ VALUES (%s, %s, %s, %s, %s)
 """.replace("%s", replchar), (current_milli_time(), owner, text, reply_to, image, ))
   cnx.commit()
   return True
+
+def like_post(follower, post):
+  qu = cnx.cursor()
+  qu.execute("INSERT INTO likes (follower, post) VALUES (%s, %s)".replace("%s", replchar), (follower, post, ))
+  cnx.commit()
+  return True
+
+def unlike_post(follower, post):
+  qu = cnx.cursor()
+  qu.execute("DELETE FROM likes WHERE follower=%s AND post=%s".replace("%s", replchar), (follower, post, ))
+  cnx.commit()
+  return True
+
+def get_like(follower, post):
+  qu = cnx.cursor()
+  qu.execute("SELECT * FROM likes WHERE follower=%s AND post=%s".replace("%s", replchar), (follower, post,))
+  for i in qu:
+    return True
+  return False
 
 def get_post(postnum):
   qu = cnx.cursor()
@@ -162,6 +188,27 @@ def index_pagehandle():
     return flask.render_template('homepage.html', posts=get_posts(), username=flask.session['username'])
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
+
+@wib.route('/@<username>')
+def specific_user_pagehandle(username):
+  qu = cnx.cursor()
+  qu.execute("SELECT snowflake, username, displayname, PFP, bio FROM users WHERE username=%s".replace("%s", replchar), (username,))
+  user_info = None
+  for row in qu:
+    user_info = {
+      "snowflake": row[0],
+      "username": row[1],
+      "displayname": row[2],
+      "PFP": row[3],
+      "bio": row[4]
+    }
+    break
+  
+  if not user_info:
+    return flask.redirect(flask.url_for('index_pagehandle'))
+    
+  posts = get_posts_by_username(username)
+  return flask.render_template('specific_user.html', posts=posts, user=user_info)
 
 @wib.route('/login', methods=['GET', 'POST'])
 def login_pagehandle():
@@ -231,10 +278,9 @@ def create_pagehandle():
 
   return flask.redirect(flask.url_for('index_pagehandle'))
 
-@wib.route('/post/<int:post_id>')
-def show_post_pagehandle(post_id):
-  #assert typeof(post_id, int)
-  return [get_post(post_id), get_sub_posts(post_id)]
+@wib.route('/@<username>/<int:post_id>')
+def show_post_pagehandle(username, post_id):
+  return flask.render_template('specific_post.html', post=get_post(post_id))
 
 @wib.route('/reboot', methods=['GET', 'POST'])
 def reboot_pagehandle():
@@ -248,3 +294,49 @@ def reboot_pagehandle():
     if m.hexdigest().upper() == "3DA5DAC093EFA65422CBB22AF4588C65":
       os.kill(os.getpid(), signal.SIGINT)
   return '<form method="post"><p><input type=text name=REBOOTCODE><p><input type=submit value=REBOOT></form>'
+
+# === API ===
+
+@wib.route('/user.json/<username>')
+def user_apihandle(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
+                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
+                WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
+  posts = []
+  for snowflake, owner_snowflake, text, reply_to, image in qu:
+    posts.append({
+      "snowflake": snowflake,
+      "owner_snowflake": owner_snowflake,
+      "text": text,
+      "reply_to": reply_to,
+      "image": image
+    })
+  return flask.jsonify(posts)
+
+@wib.route('/post.json/<int:post_id>')
+def post_apihandle(post_id):
+  qu = cnx.cursor()
+  qu.execute("SELECT snowflake, owner_snowflake, text, reply_to, image FROM posts WHERE snowflake=%s".replace("%s", replchar), (post_id) )
+  for snowflake, owner_snowflake, text, reply_to, image in qu:
+    return {"snowflake": snowflake, "owner_snowflake": owner_snowflake, "text": text, "reply_to": reply_to, "image": image}
+  return {}
+
+@wib.route('/like.json/<int:post_id>')
+def like_apihandle(post_id):
+  qu = cnx.cursor()
+  try:
+    like_post(flask.session['snowflake'], post_id)
+    return True
+  except:
+    return False
+
+@wib.route('/unlike.json/<int:post_id>')
+def unlike_apihandle(post_id):
+  qu = cnx.cursor()
+  try:
+    unlike_post(flask.session['snowflake'], post_id)
+    return True
+  except:
+    return False
+
