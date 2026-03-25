@@ -3,51 +3,79 @@
 {% block title %} DIT - Feed {% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h3>Compose Post</h3>
-        <span class="post-id">Logged in as @{{ username }}</span>
+<!-- Composer -->
+<div class="composer-section">
+    <div class="composer-wrapper">
+        <div class="composer-avatar">
+            <img src="https://ui-avatars.com/api/?name={{ username }}&background=1e293b&color=fff&size=120&bold=true" alt="Avatar">
+        </div>
+        <div class="composer-body">
+            <form action="/create" method="POST" id="compose-form">
+                <textarea name="text" class="composer-input" placeholder="Trumpet your thoughts..." required autofocus rows="2"></textarea>
+                
+                <!-- Anonymous toggle for backend compatibility hidden but default false -->
+                <input type="hidden" name="anon" value="">
+                
+                <div class="composer-actions">
+                    <div class="composer-tools">
+                        <button type="button" class="tool-btn" onclick="const el = document.getElementById('image-url-input'); el.style.display = el.style.display === 'none' ? 'block' : 'none';"><i data-lucide="image"></i></button>
+                    </div>
+                    <button type="submit" class="btn btn-primary">SEND'DIT</button>
+                </div>
+                <input type="url" name="image" id="image-url-input" class="composer-input" placeholder="Paste image URL here..." style="display: none; min-height: 40px; margin-top: 0.75rem; font-size: 0.95rem; padding: 0.5rem 1rem;">
+            </form>
+        </div>
     </div>
-    <form action="/create" method="POST">
-        <div class="form-group">
-            <label for="text">What's on your mind?</label>
-            <input type="text" name="text" id="text" class="form-control" placeholder="Type your message here..."
-                required autofocus />
-        </div>
-
-        <div class="form-group">
-            <label for="image">Image URL (optional)</label>
-            <input type="url" name="image" id="image" class="form-control" placeholder="https://" />
-        </div>
-
-        <div class="checkbox-group">
-            <input type="checkbox" name="anon" id="anon" value="Yes" />
-            <label for="anon">Post Anonymously</label>
-        </div>
-
-        <button type="submit" class="btn">Send'dit</button>
-    </form>
 </div>
 
-<div class="feed">
+<div class="feed-section">
     {% for post in posts %}
-    <div class="card post-card">
-        <div class="post-meta">
-            <div class="post-author">@{{ post.owner }}</div>
-            <div class="post-id">#{{ post.snowflake }}</div>
-            {% if post.reply_to %}
-            <span class="post-id">&bull; Replying to #{{ post.reply_to }}</span>
+    <article class="post-card">
+        <div class="post-avatar">
+            <img src="https://ui-avatars.com/api/?name={{ post.owner }}&background=random&size=120&bold=true" alt="Avatar">
+        </div>
+        <div class="post-content">
+            <div class="post-header">
+                <span class="post-name">{{ post.owner|upper }}</span>
+                <span class="post-handle">@{{ post.owner|lower }}</span>
+                <span class="post-dot">&middot;</span>
+                <span class="post-time">2h</span>
+                {% if post.reply_to %}
+                <span class="post-replying-to" style="margin-left:auto;">Replying to #{{ post.reply_to }}</span>
+                {% endif %}
+            </div>
+            
+            <div class="post-text">
+                {{ post.text }}
+            </div>
+            
+            {% if post.image and post.image != 'None' and post.image != '' %}
+            <div class="post-media">
+                <img src="{{ post.image }}" alt="Post attachment" onerror="this.style.display='none'">
+            </div>
             {% endif %}
+            
+            <div class="post-actions">
+                <div class="action-item">
+                    <button type="button" class="action-btn"><i class="icon" data-lucide="message-square"></i></button>
+                    <span class="action-count">12</span>
+                </div>
+                <div class="action-item">
+                    <button type="button" class="action-btn"><i class="icon" data-lucide="repeat"></i></button>
+                    <span class="action-count">48</span>
+                </div>
+                <div class="action-item active-orange">
+                    <button type="button" class="action-btn"><i class="icon" data-lucide="triangle" fill="currentColor"></i></button>
+                    <span class="action-count">1.2k</span>
+                </div>
+                <div class="action-item">
+                    <button type="button" class="action-btn"><i class="icon" data-lucide="share-2"></i></button>
+                </div>
+            </div>
         </div>
-        <div class="post-text">
-            {{ post.text }}
-        </div>
-        {% if post.image and post.image != 'None' and post.image != '' %}
-        <img src="{{ post.image }}" alt="Post attachment" class="post-image" onerror="this.style.display='none'">
-        {% endif %}
-    </div>
+    </article>
     {% else %}
-    <div class="card" style="text-align: center; color: var(--text-secondary);">
+    <div class="empty-state">
         <p>No posts yet. Be the first to say something!</p>
     </div>
     {% endfor %}

@@ -160,7 +160,7 @@ def index_pagehandle():
   if 'username' in flask.session:
     return flask.render_template('homepage.html', posts=get_posts(), username=flask.session['username'])
   else:
-    return '<a href="/login">You are not logged in</a>'
+    return flask.redirect(flask.url_for('register_pagehandle'))
 
 @wib.route('/login', methods=['GET', 'POST'])
 def login_pagehandle():

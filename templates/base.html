@@ -6,22 +6,70 @@
     <title>{% block title %}DIT{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">DIT</div>
-        <div class="nav-links">
-            <a href="/" class="nav-link">Home</a>
-            {% if request.path != '/login' %}
-            <a href="/logout" class="nav-link">Logout</a>
-            {% endif %}
-        </div>
-    </nav>
-    <div class="content-container">
-        {% block content %}
-        {% endblock %}
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logomark">
+                    <span class="logo-text">DIT</span>
+                    <span class="logo-subtext">TRACK. EXPLORE. AMPLIFY.</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <i data-lucide="home"></i>
+                    <span>HOME</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="compass"></i>
+                    <span>EXPLORE</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="bell"></i>
+                    <span>NOTIFICATIONS</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="user"></i>
+                    <span>PROFILE</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    <span>SETTINGS</span>
+                </a>
+                
+                {% if request.path != '/login' and 'username' in session %}
+                <a href="/logout" class="nav-item" style="margin-top: auto;">
+                    <i data-lucide="log-out"></i>
+                    <span>LOGOUT</span>
+                </a>
+                {% endif %}
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="/" class="btn btn-primary btn-block btn-lg">SEND'DIT</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1>HOME</h1>
+            </header>
+            <div class="content-scroll">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
     </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>
