@@ -6,17 +6,18 @@ config = configparser.ConfigParser()
 out = config.read('settings.ini')
 DEBUG_MODE = len(out) == 0
 
+
 if DEBUG_MODE:
   import sqlite3
-  mysql = lambda _:_
-  mysql.connector = mysql
-  mysql.connector.errors = mysql
-  mysql.connector.errors.ProgrammingError = sqlite3.OperationalError
   replchar = "?"
+  OperationalError = sqlite3.OperationalError
+  IntegrityError = sqlite3.IntegrityError
 else:
   print(config['DEFAULT']['host'])
   import mysql.connector
   replchar = "%s"
+  OperationalError = mysql.connector.errors.ProgrammingError
+  IntegrityError = mysql.connector.errors.IntegrityError
 
 def current_milli_time():
     return round(time.time() * 1000)
@@ -74,7 +75,7 @@ try:
     PRIMARY KEY (snowflake)
 )""".replace(*urlrep))
   print("users table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("users table exists.")
 
 try:
@@ -89,7 +90,7 @@ try:
     CONSTRAINT FK_reply     FOREIGN KEY (reply_to)        REFERENCES posts(snowflake)
 )""".replace(*urlrep))
   print("posts table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("posts table exists.")
 
 try:
@@ -102,7 +103,7 @@ try:
     CONSTRAINT FK_follow_leader FOREIGN KEY (leader)   REFERENCES users(snowflake)
 )""".replace(*urlrep))
   print("followers table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("followers table exists.")
 
 try:
@@ -114,7 +115,7 @@ try:
     CONSTRAINT FK_likepost   FOREIGN KEY (post)     REFERENCES posts(snowflake)
 )""".replace(*urlrep))
   print("likes table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("likes table exists.")
 
 # https://i.redd.it/maes48axh3re1.jpeg
@@ -204,7 +205,7 @@ def register_pagehandle():
   try:
     print( username_try, password_try.encode("UTF8").hex() )
     create_user(username_try, password_try)
-  except sqlite3.IntegrityError:
+  except IntegrityError:
     return flask.render_template('register.html', error="Username Taken.")
 
   return flask.redirect(flask.url_for('login_pagehandle'))
@@ -213,6 +214,7 @@ def register_pagehandle():
 def logout_pagehandle():
     # remove the username from the flask.session if it's there
     flask.session.pop('username', None)
+    flask.session.pop('snowflake', None)
     return flask.redirect(flask.url_for('index_pagehandle'))
 
 @wib.route('/create', methods=['GET', 'POST'])
