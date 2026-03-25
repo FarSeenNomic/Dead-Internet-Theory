@@ -34,7 +34,7 @@ else:
 
 wib = flask.Flask(__name__)
 if DEBUG_MODE:
-  wib.secret_key = "BRILLIG"
+  wib.secret_key = str(current_milli_time())
 else:
   wib.secret_key = config['DEFAULT']['secret']
 
