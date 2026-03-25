@@ -3,22 +3,21 @@ import requests
 
 # API Create account
 
-def test_register_endpoint():
-    url = "http://localhost/register"
+requests.Session()
 
-    form_data = {
-        "username": "example_user",
-        "password": "ExamplePassword123!"
-    }
+form_data = {
+    "username": "example_user",
+    "password": "password"
+}
 
-    response = requests.post(url, data=form_data)
+s.post("http://localhost/register", data=form_data)
+assert response.status_code == 200
 
-    assert response.status_code == 200
+s.post("http://localhost/login", data=form_data)
+assert response.status_code == 200
 
-    data = response.json()
-    assert data["status"] == "success"
-
-    return data
+s.post("http://localhost/create", data={"text": "butts"})
+assert response.status_code == 200
 
 # API Login and get API key
 
