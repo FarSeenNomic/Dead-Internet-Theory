@@ -32,7 +32,10 @@ else:
   )
 
 wib = flask.Flask(__name__)
-wib.secret_key = config['DEFAULT']['sercret']
+if DEBUG_MODE:
+  wib.secret_key = "BRILLIG"
+else:
+  wib.secret_key = config['DEFAULT']['secret']
 
 cursor = cnx.cursor()
 
