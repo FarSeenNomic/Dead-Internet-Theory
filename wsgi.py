@@ -2,7 +2,9 @@ import flask
 import time
 import configparser
 
-DEBUG_MODE = False
+config = configparser.ConfigParser()
+out = config.read('settings.ini')
+DEBUG_MODE = len(out) == 0
 
 if DEBUG_MODE:
   import sqlite3
@@ -12,15 +14,12 @@ if DEBUG_MODE:
   mysql.connector.errors.ProgrammingError = sqlite3.OperationalError
   replchar = "?"
 else:
+  print(config['DEFAULT']['host'])
   import mysql.connector
   replchar = "%s"
 
 def current_milli_time():
     return round(time.time() * 1000)
-
-config = configparser.ConfigParser()
-config.read('settings.ini')
-print(config['DEFAULT']['host'])
 
 if DEBUG_MODE:
   cnx = sqlite3.connect(":memory:", check_same_thread=False)
@@ -165,14 +164,23 @@ def login_pagehandle():
   if flask.request.method == 'GET':
     return flask.render_template('login.html')
   qu = cnx.cursor()
-  print( flask.request.form )
+
+  username_try = flask.request.form.get('username')
+  password_try = flask.request.form.get('password')
+
+  # database verifies unique.
+  username_try = username_try.strip()
+
+  if username_try.startswith("@"):
+    username_try = username_try[1:]
+
   qu.execute("SELECT snowflake, username FROM users WHERE USERNAME=%s AND PASSWORD=%s".replace("%s", replchar),
-    (flask.request.form.get('username'), flask.request.form.get('password', '').encode("UTF8").hex(), ))
+    (username_try, password_try.encode("UTF8").hex(), ))
   for snowflake, username in qu:
     flask.session['snowflake'] = snowflake
     flask.session['username'] = username
     return flask.redirect(flask.url_for('index_pagehandle'))
-  return flask.render_template('login.html', errror="bad info")
+  return flask.render_template('login.html', error="Username and Password not found.")
 
 @wib.route('/register', methods=['GET', 'POST'])
 def register_pagehandle():
@@ -182,14 +190,20 @@ def register_pagehandle():
   password_try = flask.request.form.get('password')
 
   # database verifies unique.
-  try:
-    assert username_try.startswith("@")
-    assert 6 <= len(password_try) <= 128
-  except:
-    return flask.render_template('register.html', errror="bad info")
+  username_try = username_try.strip()
 
-  print( username_try, password_try.encode("UTF8").hex() )
-  create_user(username_try, password_try) # might throw error?
+  if username_try.startswith("@"):
+    username_try = username_try[1:]
+
+  if not 6 <= len(password_try) <= 128:
+    return flask.render_template('register.html', error="Password must be between 6 and 128 characters.")
+
+  try:
+    print( username_try, password_try.encode("UTF8").hex() )
+    create_user(username_try, password_try)
+  except sqlite3.IntegrityError:
+    return flask.render_template('register.html', error="Username Taken.")
+
   return flask.redirect(flask.url_for('login_pagehandle'))
 
 @wib.route('/logout')
