@@ -70,6 +70,74 @@
 
     <script>
         lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle bounding boxes with state persistence and transition logic
+            const boxes = document.querySelectorAll('.post-card, .auth-container, .composer-section');
+            const navType = performance.getEntriesByType("navigation")[0]?.type || "";
+            const storageKey = 'boxAngles_' + window.location.pathname;
+            const storedAnglesRaw = sessionStorage.getItem(storageKey);
+            const storedAngles = storedAnglesRaw ? JSON.parse(storedAnglesRaw) : null;
+            
+            let targetAngles = [];
+            
+            if (navType === 'reload' && storedAngles) {
+                // Manual refresh: Transition from OLD to NEW
+                boxes.forEach((box, i) => {
+                    box.style.transform = `rotate(${storedAngles[i] || 0}deg)`;
+                    const newAngle = (Math.random() * 2 - 1).toFixed(2);
+                    targetAngles.push(newAngle);
+                    box.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    // Trigger reflow to ensure start position is set
+                    void box.offsetWidth; 
+                    box.style.transform = `rotate(${newAngle}deg)`;
+                });
+                sessionStorage.setItem(storageKey, JSON.stringify(targetAngles));
+                
+            } else if (storedAngles && navType !== 'reload') {
+                // Form error / Back button (no reload recorded): Keep old angles, no transition!
+                boxes.forEach((box, i) => {
+                    box.style.transition = 'none';
+                    box.style.transform = `rotate(${storedAngles[i]}deg)`;
+                    targetAngles.push(storedAngles[i]);
+                });
+                sessionStorage.setItem(storageKey, JSON.stringify(targetAngles));
+                
+            } else {
+                // New page visit: Swift transition from STRAIGHT to ANGLED
+                boxes.forEach((box, i) => {
+                    const newAngle = (Math.random() * 2 - 1).toFixed(2);
+                    targetAngles.push(newAngle);
+                    box.style.transform = `rotate(0deg)`;
+                    box.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s';
+                    void box.offsetWidth;
+                    box.style.transform = `rotate(${newAngle}deg)`;
+                });
+                sessionStorage.setItem(storageKey, JSON.stringify(targetAngles));
+            }
+
+            // Handle dynamic button interactions that stay angular and don't distort text heavily
+            const buttons = document.querySelectorAll('.btn');
+            function randomizeButton(btn, isActive) {
+                if (isActive) {
+                    // Slight, sharp slants without blobby borders
+                    const sx = (Math.random() * 4 - 2).toFixed(1); // -2 to 2 deg skew
+                    const rot = (Math.random() * 4 - 2).toFixed(1); // -2 to 2 deg rotate
+                    btn.style.setProperty('--rand-skew-x', `${sx}deg`);
+                    btn.style.setProperty('--rand-rotate', `${rot}deg`);
+                } else {
+                    btn.style.setProperty('--rand-skew-x', `0deg`);
+                    btn.style.setProperty('--rand-rotate', `0deg`);
+                }
+            }
+
+            buttons.forEach(btn => {
+                randomizeButton(btn, false);
+                btn.addEventListener('mousedown', () => randomizeButton(btn, true));
+                btn.addEventListener('mouseup', () => setTimeout(() => randomizeButton(btn, false), 150));
+                btn.addEventListener('mouseleave', () => randomizeButton(btn, false));
+            });
+        });
     </script>
 </body>
 </html>
