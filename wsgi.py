@@ -43,10 +43,7 @@ cursor = cnx.cursor()
 class post():
   def __init__(self, snowflake, owner, text, reply_to, image):
     self.snowflake = snowflake
-    if owner:
-      self.owner = owner
-    else:
-      self.owner = "anonymous"
+    self.owner = owner
     self.text = text
     self.reply_to = reply_to
     self.image = image
@@ -269,7 +266,7 @@ def login_pagehandle():
     flask.session['snowflake'] = snowflake
     flask.session['username'] = username
     return flask.redirect(flask.url_for('index_pagehandle'))
-  return flask.render_template('login.html', error="Username and Password not found.")
+  return flask.render_template('login.html', error="Username and Password not found."), 401
 
 @wib.route('/register', methods=['GET', 'POST'])
 def register_pagehandle():
@@ -285,13 +282,12 @@ def register_pagehandle():
     username_try = username_try[1:]
 
   if not 6 <= len(password_try) <= 128:
-    return flask.render_template('register.html', error="Password must be between 6 and 128 characters.")
+    return flask.render_template('register.html', error="Password must be between 6 and 128 characters."), 422
 
   try:
-    print( username_try, password_try.encode("UTF8").hex() )
     create_user(username_try, password_try)
   except IntegrityError:
-    return flask.render_template('register.html', error="Username Taken.")
+    return flask.render_template('register.html', error="Username Taken."), 409
 
   return flask.redirect(flask.url_for('login_pagehandle'))
 
@@ -308,11 +304,19 @@ def create_pagehandle():
     return flask.redirect(flask.url_for('index_pagehandle'))
 
   owner = flask.session['snowflake']
-  if flask.request.form.get('anon'):
-    owner = 0
-  print(owner)
 
   make_post(owner, flask.request.form.get("text", ""), None, flask.request.form.get("image", ""))
+
+  return flask.redirect(flask.url_for('index_pagehandle'))
+
+@wib.route('/reply/<int:post_id>', methods=['GET', 'POST'])
+def reply_pagehandle(post_id):
+  if flask.request.method == 'GET':
+    return flask.redirect(flask.url_for('index_pagehandle'))
+
+  owner = flask.session['snowflake']
+
+  make_post(owner, flask.request.form.get("text", ""), post_id, flask.request.form.get("image", ""))
 
   return flask.redirect(flask.url_for('index_pagehandle'))
 
@@ -335,7 +339,7 @@ def reboot_pagehandle():
 
 # === API ===
 
-@wib.route('/user.json/<username>')
+@wib.route('/user.json/@<username>')
 def user_apihandle(username):
   qu = cnx.cursor()
   qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
@@ -365,33 +369,33 @@ def like_apihandle(post_id):
   qu = cnx.cursor()
   try:
     like_post(flask.session['snowflake'], post_id)
-    return True
+    return flask.jsonify(True), 200
   except:
-    return False
+    return flask.jsonify(False), 409
 
 @wib.route('/unlike.json/<int:post_id>')
 def unlike_apihandle(post_id):
   qu = cnx.cursor()
   try:
     unlike_post(flask.session['snowflake'], post_id)
-    return True
+    return flask.jsonify(True), 200
   except:
-    return False
+    return flask.jsonify(False), 409
 
 @wib.route('/follow.json/<int:leader_id>')
 def follow_apihandle(leader_id):
   qu = cnx.cursor()
   try:
     follow_user(flask.session['snowflake'], leader_id)
-    return True
+    return flask.jsonify(True), 200
   except:
-    return False
+    return flask.jsonify(False), 409
 
 @wib.route('/unfollow.json/<int:leader_id>')
 def unfollow_apihandle(leader_id):
   qu = cnx.cursor()
   try:
     unfollow_user(flask.session['snowflake'], leader_id)
-    return True
+    return flask.jsonify(True), 200
   except:
-    return False
+    return flask.jsonify(False), 409
