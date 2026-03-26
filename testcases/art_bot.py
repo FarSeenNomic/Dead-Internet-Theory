@@ -1,10 +1,12 @@
 import requests
 import json
-import random
+
 from openai import OpenAI
 
 client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
 
+openai_client = OpenAI() # you would need to set the OPENAI_API_KEY environment variable for this to work
+#export OPENAI_API_KEY="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"
 def GPT4_request(prompt, gpt_parameter):
   completion = client.chat.completions.create(
     model="lmstudio-community/Phi-3.1-mini-4k-instruct-GGUF",
@@ -25,6 +27,26 @@ gpt_parameter = {"engine": "text-davinci-003", "max_tokens": 140,
                  "frequency_penalty": 0, "presence_penalty": 0,
                  "stop": ['=','\n']}
 
+def generate_image(prompt):
+    """
+    Generate an image from text and return its URL.
+    """
+    try:
+        result = openai_client.images.generate(
+            model="gpt-image-1",
+            prompt=prompt,
+            size="500x500"
+        )
+        return result.data[0].url
+    except Exception as e:
+        print("Image generation error:", e)
+        return None
+
+gpt_parameter = {
+    "max_tokens": 140,
+    "stop": ['=','\n']
+}
+
 prompt = "You love art. Please write a abstract tweet about it."
 form_data = {
     "username": "example_user3",
@@ -33,13 +55,11 @@ form_data = {
 
 s = requests.Session()
 output = GPT4_request(prompt, gpt_parameter).strip()
-image_prompt = GPT4_request("Give a 4 to 5 word image search phrase " + output, gpt_parameter).strip()
-image_url = f"https://source.unsplash.com/600x400/?{image_prompt.replace(' ', ',')}"
+image_url = generate_image(output)
+
 
 response = s.post("http://localhost:5000/login", data=form_data)
 
 response = s.post("http://localhost:5000/create", data={"text": output, "image": image_url})
 
 print(output)
-print(image_prompt)
-print(image_url)
