@@ -44,6 +44,7 @@ class post():
   def __init__(self, snowflake, owner, text, reply_to, image):
     self.snowflake = snowflake
     self.owner = owner
+    self.owner_pfp = ""
     self.text = text
     self.reply_to = reply_to
     self.image = image
@@ -166,7 +167,14 @@ def get_posts_by_username(username):
   qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
                 FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
                 WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
-  return [post(*data) for data in qu]
+  postc = []
+  for data in qu:
+    postc.append(post(*data))
+  for data in postc:
+    data.comment_count = get_reply_count(data.snowflake)
+    #data.repost_count = get_repost_count(data.snowflake)
+    data.like_count = get_like_count(data.snowflake)
+  return postc
 
 def make_post(owner, text, reply_to, image):
   qu = cnx.cursor()
@@ -238,7 +246,7 @@ def get_sub_posts(postnum):
 @wib.route("/")
 def index_pagehandle():
   if 'username' in flask.session:
-    return flask.render_template('homepage.html', posts=get_posts(include_counts=True), username=flask.session['username'])
+    return flask.render_template('homepage.html', posts=get_posts(include_counts=True), username=flask.session.get('username'))
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
 
@@ -309,7 +317,7 @@ def register_pagehandle():
   if username_try.startswith("@"):
     username_try = username_try[1:]
 
-  if not 6 <= len(password_try) <= 128:
+  if not 6 <= len(password_try) <= 64:
     return flask.render_template('register.html', error="Password must be between 6 and 128 characters."), 422
 
   try:
@@ -331,7 +339,9 @@ def create_pagehandle():
   if flask.request.method == 'GET':
     return flask.redirect(flask.url_for('index_pagehandle'))
 
-  owner = flask.session['snowflake']
+  owner = flask.session.get('snowflake')
+  if not owner:
+    return "Bad Info", 401
 
   make_post(owner, flask.request.form.get("text", ""), None, flask.request.form.get("image", ""))
 
@@ -342,7 +352,9 @@ def reply_pagehandle(post_id):
   if flask.request.method == 'GET':
     return flask.redirect(flask.url_for('index_pagehandle'))
 
-  owner = flask.session['snowflake']
+  owner = flask.session.get('snowflake')
+  if not owner:
+    return "Bad Info", 401
 
   make_post(owner, flask.request.form.get("text", ""), post_id, flask.request.form.get("image", ""))
 
@@ -396,7 +408,10 @@ def post_apihandle(post_id):
 def like_apihandle(post_id):
   qu = cnx.cursor()
   try:
-    like_post(flask.session['snowflake'], post_id)
+    snowflake = flask.session.get('snowflake')
+    if not snowflake:
+      return "Bad Info", 401
+    like_post(snowflake, post_id)
     return flask.jsonify(True), 200
   except IntegrityError:
     return flask.jsonify(False), 409
@@ -405,7 +420,10 @@ def like_apihandle(post_id):
 def unlike_apihandle(post_id):
   qu = cnx.cursor()
   try:
-    unlike_post(flask.session['snowflake'], post_id)
+    snowflake = flask.session.get('snowflake')
+    if not snowflake:
+      return "Bad Info", 401
+    unlike_post(snowflake, post_id)
     return flask.jsonify(True), 200
   except IntegrityError:
     return flask.jsonify(False), 409
@@ -414,7 +432,10 @@ def unlike_apihandle(post_id):
 def follow_apihandle(leader_id):
   qu = cnx.cursor()
   try:
-    follow_user(flask.session['snowflake'], leader_id)
+    snowflake = flask.session.get('snowflake')
+    if not snowflake:
+      return "Bad Info", 401
+    follow_user(snowflake, leader_id)
     return flask.jsonify(True), 200
   except IntegrityError:
     return flask.jsonify(False), 409
@@ -423,7 +444,10 @@ def follow_apihandle(leader_id):
 def unfollow_apihandle(leader_id):
   qu = cnx.cursor()
   try:
-    unfollow_user(flask.session['snowflake'], leader_id)
+    snowflake = flask.session.get('snowflake')
+    if not snowflake:
+      return "Bad Info", 401
+    unfollow_user(snowflake, leader_id)
     return flask.jsonify(True), 200
   except IntegrityError:
     return flask.jsonify(False), 409
