@@ -165,6 +165,34 @@ def unlike_post(follower, post):
   cnx.commit()
   return True
 
+def follow_user(follower, leader):
+  qu = cnx.cursor()
+  qu.execute("INSERT INTO follows (follower, leader, snowflake) VALUES (%s, %s, %s)".replace("%s", replchar), (follower, leader, current_milli_time()))
+  cnx.commit()
+  return True
+
+def unfollow_user(follower, leader):
+  qu = cnx.cursor()
+  qu.execute("DELETE FROM follows WHERE follower=%s AND leader=%s".replace("%s", replchar), (follower, leader, ))
+  cnx.commit()
+  return True
+
+def get_followers(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio 
+                FROM users u JOIN follows f ON u.snowflake = f.follower 
+                JOIN users target ON f.leader = target.snowflake 
+                WHERE target.username=%s""".replace("%s", replchar), (username,))
+  return [{"snowflake": r[0], "username": r[1], "displayname": r[2], "PFP": r[3], "bio": r[4]} for r in qu]
+
+def get_following(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio 
+                FROM users u JOIN follows f ON u.snowflake = f.leader 
+                JOIN users target ON f.follower = target.snowflake 
+                WHERE target.username=%s""".replace("%s", replchar), (username,))
+  return [{"snowflake": r[0], "username": r[1], "displayname": r[2], "PFP": r[3], "bio": r[4]} for r in qu]
+
 def get_like(follower, post):
   qu = cnx.cursor()
   qu.execute("SELECT * FROM likes WHERE follower=%s AND post=%s".replace("%s", replchar), (follower, post,))
@@ -209,6 +237,16 @@ def specific_user_pagehandle(username):
     
   posts = get_posts_by_username(username)
   return flask.render_template('specific_user.html', posts=posts, user=user_info)
+
+@wib.route('/@<username>/followers')
+def followers_pagehandle(username):
+  followers = get_followers(username)
+  return flask.render_template('followers.html', followers=followers, username=username)
+
+@wib.route('/@<username>/following')
+def following_pagehandle(username):
+  following = get_following(username)
+  return flask.render_template('following.html', following=following, username=username)
 
 @wib.route('/login', methods=['GET', 'POST'])
 def login_pagehandle():
@@ -340,3 +378,20 @@ def unlike_apihandle(post_id):
   except:
     return False
 
+@wib.route('/follow.json/<int:leader_id>')
+def follow_apihandle(leader_id):
+  qu = cnx.cursor()
+  try:
+    follow_user(flask.session['snowflake'], leader_id)
+    return True
+  except:
+    return False
+
+@wib.route('/unfollow.json/<int:leader_id>')
+def unfollow_apihandle(leader_id):
+  qu = cnx.cursor()
+  try:
+    unfollow_user(flask.session['snowflake'], leader_id)
+    return True
+  except:
+    return False
