@@ -47,6 +47,9 @@ class post():
     self.text = text
     self.reply_to = reply_to
     self.image = image
+    self.comment_count = 0
+    self.repost_count = 0
+    self.like_count = 0
 
 '''
 try:
@@ -128,10 +131,35 @@ def create_user(nam, pas):
   )
   return time
 
-def get_posts():
+def get_posts(snowflake=0, *, include_counts=False):
   qu = cnx.cursor()
-  qu.execute("SELECT * FROM posts WHERE reply_to IS NULL ORDER BY snowflake DESC LIMIT 15")
-  return [post(*data) for data in qu]
+  if snowflake:
+    qu.execute("SELECT * FROM posts WHERE reply_to=%s ORDER BY snowflake DESC LIMIT 255".replace("%s", replchar), (snowflake,))
+  else:
+    qu.execute("SELECT * FROM posts ORDER BY snowflake DESC LIMIT 255")
+  postc = []
+  for data in qu:
+    postc.append(post(*data))
+  if include_counts:
+    for data in postc:
+      data.comment_count = get_reply_count(data.snowflake)
+      #data.repost_count = get_repost_count(data.snowflake)
+      data.like_count = get_like_count(data.snowflake)
+  return postc
+
+def get_reply_count(snowflake):
+  qu = cnx.cursor()
+  qu.execute("SELECT COUNT(*) FROM posts WHERE reply_to=%s".replace("%s", replchar), (snowflake,))
+  for data in qu:
+    return data[0]
+  return 0
+
+def get_like_count(snowflake):
+  qu = cnx.cursor()
+  qu.execute("SELECT COUNT(*) FROM likes WHERE post=%s".replace("%s", replchar), (snowflake,))
+  for data in qu:
+    return data[0]
+  return 0
 
 def get_posts_by_username(username):
   qu = cnx.cursor()
@@ -210,7 +238,7 @@ def get_sub_posts(postnum):
 @wib.route("/")
 def index_pagehandle():
   if 'username' in flask.session:
-    return flask.render_template('homepage.html', posts=get_posts(), username=flask.session['username'])
+    return flask.render_template('homepage.html', posts=get_posts(include_counts=True), username=flask.session['username'])
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
 
@@ -356,7 +384,7 @@ def user_apihandle(username):
     })
   return flask.jsonify(posts)
 
-@wib.route('/post.json/<int:post_id>')
+@wib.route('/post.json/<int:post_id>', methods=['POST'])
 def post_apihandle(post_id):
   qu = cnx.cursor()
   qu.execute("SELECT snowflake, owner_snowflake, text, reply_to, image FROM posts WHERE snowflake=%s".replace("%s", replchar), (post_id) )
@@ -364,38 +392,38 @@ def post_apihandle(post_id):
     return {"snowflake": snowflake, "owner_snowflake": owner_snowflake, "text": text, "reply_to": reply_to, "image": image}
   return {}
 
-@wib.route('/like.json/<int:post_id>')
+@wib.route('/like.json/<int:post_id>', methods=['POST'])
 def like_apihandle(post_id):
   qu = cnx.cursor()
   try:
     like_post(flask.session['snowflake'], post_id)
     return flask.jsonify(True), 200
-  except:
+  except IntegrityError:
     return flask.jsonify(False), 409
 
-@wib.route('/unlike.json/<int:post_id>')
+@wib.route('/unlike.json/<int:post_id>', methods=['POST'])
 def unlike_apihandle(post_id):
   qu = cnx.cursor()
   try:
     unlike_post(flask.session['snowflake'], post_id)
     return flask.jsonify(True), 200
-  except:
+  except IntegrityError:
     return flask.jsonify(False), 409
 
-@wib.route('/follow.json/<int:leader_id>')
+@wib.route('/follow.json/<int:leader_id>', methods=['POST'])
 def follow_apihandle(leader_id):
   qu = cnx.cursor()
   try:
     follow_user(flask.session['snowflake'], leader_id)
     return flask.jsonify(True), 200
-  except:
+  except IntegrityError:
     return flask.jsonify(False), 409
 
-@wib.route('/unfollow.json/<int:leader_id>')
+@wib.route('/unfollow.json/<int:leader_id>', methods=['POST'])
 def unfollow_apihandle(leader_id):
   qu = cnx.cursor()
   try:
     unfollow_user(flask.session['snowflake'], leader_id)
     return flask.jsonify(True), 200
-  except:
+  except IntegrityError:
     return flask.jsonify(False), 409
