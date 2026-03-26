@@ -88,11 +88,16 @@ a {
     font-weight: 600;
     font-size: 1.1rem;
     border-left: 4px solid transparent;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .nav-item:hover {
     color: var(--navy);
+    transform: translateX(4px);
+}
+
+.nav-item:active {
+    transform: scale(0.97);
 }
 
 .nav-item.active {
@@ -119,8 +124,11 @@ a {
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    border-radius: 4px;
-    transition: transform 0.1s, box-shadow 0.1s;
+    border-radius: 0px;
+    --rand-skew-x: 0deg;
+    --rand-rotate: 0deg;
+    transform: rotate(var(--rand-rotate)) skewX(var(--rand-skew-x));
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
     text-transform: uppercase;
 }
 
@@ -131,21 +139,33 @@ a {
     box-shadow: 4px 4px 0px 0px var(--navy);
 }
 
+.btn-primary:hover {
+    transform: translate(-2px, -2px) rotate(var(--rand-rotate)) skewX(var(--rand-skew-x));
+    box-shadow: 6px 6px 0px 0px var(--navy);
+    background-color: var(--orange-hover);
+}
+
 .btn-primary:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px 0px var(--navy);
+    transform: translate(4px, 4px) rotate(var(--rand-rotate)) skewX(var(--rand-skew-x)) scale(0.97);
+    box-shadow: 0px 0px 0px 0px var(--navy);
 }
 
 .btn-secondary {
     background-color: var(--bg-light);
     color: var(--navy);
     border: 2px solid var(--navy);
-    box-shadow: 3px 3px 0px 0px var(--navy);
+    box-shadow: 4px 4px 0px 0px var(--navy);
+}
+
+.btn-secondary:hover {
+    transform: translate(-2px, -2px) rotate(var(--rand-rotate)) skewX(var(--rand-skew-x));
+    box-shadow: 6px 6px 0px 0px var(--navy);
+    background-color: #fff;
 }
 
 .btn-secondary:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px 0px var(--navy);
+    transform: translate(4px, 4px) rotate(var(--rand-rotate)) skewX(var(--rand-skew-x)) scale(0.97);
+    box-shadow: 0px 0px 0px 0px var(--navy);
 }
 
 .btn-block {
@@ -192,8 +212,8 @@ a {
     padding: 1.5rem;
     background-color: #f8fafc; /* slightly offset from bg-light to stand out */
     border: 2px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.05); /* soft pop */
+    border-radius: 0px;
+    box-shadow: 6px 6px 0px 0px var(--navy); /* sharp harsh brutalist shadow for fun */
     margin: 1.5rem;
 }
 
@@ -205,9 +225,9 @@ a {
 .composer-avatar img {
     width: 48px;
     height: 48px;
-    border-radius: 4px;
+    border-radius: 0px;
     border: 2px solid var(--navy);
-    box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.1);
+    box-shadow: 2px 2px 0px 0px var(--navy);
 }
 
 .composer-body {
@@ -227,7 +247,7 @@ a {
     resize: none;
     outline: none;
     min-height: 80px;
-    border-radius: 2px;
+    border-radius: 0px;
 }
 
 .composer-actions {
@@ -247,10 +267,16 @@ a {
     border: none;
     cursor: pointer;
     color: var(--navy);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tool-btn:hover {
     color: var(--orange);
+    transform: scale(1.15) rotate(-3deg);
+}
+
+.tool-btn:active {
+    transform: scale(0.9);
 }
 
 .tool-btn svg {
@@ -279,7 +305,7 @@ a {
 .post-avatar img {
     width: 48px;
     height: 48px;
-    border-radius: 4px;
+    border-radius: 0px;
     border: 2px solid var(--navy);
 }
 
@@ -336,9 +362,9 @@ a {
 
 .post-media img {
     max-width: 100%;
-    border-radius: 4px;
+    border-radius: 0px;
     border: 2px solid var(--navy);
-    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.1);
+    box-shadow: 4px 4px 0px 0px var(--navy);
 }
 
 .post-actions {
@@ -356,6 +382,7 @@ a {
     font-size: 0.9rem;
     font-weight: 600;
     transition: color 0.2s;
+    cursor: pointer;
 }
 
 .action-btn {
@@ -366,6 +393,7 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .action-btn svg {
@@ -375,6 +403,14 @@ a {
 
 .action-item:hover, .action-item.active-orange {
     color: var(--orange);
+}
+
+.action-item:hover .action-btn {
+    transform: scale(1.2) translateY(-2px);
+}
+
+.action-item:active .action-btn {
+    transform: scale(0.85);
 }
 
 .empty-state {
@@ -390,8 +426,8 @@ a {
     background: #fff;
     padding: 2rem;
     border: 2px solid var(--border-color);
-    box-shadow: 4px 4px 0px 0px var(--navy);
-    border-radius: 8px;
+    box-shadow: 8px 8px 0px 0px var(--navy);
+    border-radius: 0px;
 }
 
 .auth-container h2 {
@@ -399,10 +435,18 @@ a {
     color: var(--navy);
 }
 
+@keyframes bounceShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
 .error-msg {
     color: var(--orange);
-    margin-bottom: 1rem;
-    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0rem;
+    font-weight: 800;
+    animation: bounceShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }
 
 /* Default Forms */
@@ -422,8 +466,8 @@ a {
     width: 100%;
     padding: 0.75rem 1rem;
     background-color: var(--bg-light);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border: 2px solid var(--border-color);
+    border-radius: 0px;
     color: var(--navy);
     font-family: inherit;
     transition: border-color 0.2s;
