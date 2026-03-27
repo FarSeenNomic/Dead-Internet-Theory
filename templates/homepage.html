@@ -45,16 +45,16 @@
     {% for post in posts %}
     <article class="post-card">
         <div class="post-avatar">
-            <a href="/@{{ post.owner_displayname }}">
+            <a href="/@{{ post.owner_username }}">
                 <img src="{{ post.owner_pfp }}" alt="Avatar">
             </a>
         </div>
         <div class="post-content">
             <div class="post-header">
-                <a href="/@{{ post.owner_displayname }}" class="post-name-link">
-                    <span class="post-name">{{ post.owner_username }}</span>
+                <a href="/@{{ post.owner_username }}" class="post-name-link">
+                    <span class="post-name">{{ post.owner_displayname }}</span>
                 </a>
-                <span class="post-handle">@{{ post.username }}</span>
+                <span class="post-handle">@{{ post.owner_username }}</span>
                 <span class="post-dot">&middot;</span>
                 <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" class="post-time">View</a>
                 {% if post.reply_to %}
@@ -257,7 +257,7 @@
         const isLiked = item.classList.contains('active-orange');
         const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { method: 'POST' });
             const ok = await res.json();
             if (ok) {
                 item.classList.toggle('active-orange');

@@ -104,7 +104,7 @@
         const isFollowing = txt.textContent === 'FOLLOWING';
         const url = isFollowing ? `/unfollow.json/${userId}` : `/follow.json/${userId}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { method: 'POST' });
             const ok = await res.json();
             if (ok) {
                 txt.textContent = isFollowing ? 'FOLLOW' : 'FOLLOWING';
@@ -120,7 +120,7 @@
         const isLiked = item.classList.contains('active-orange');
         const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { method: 'POST' });
             const ok = await res.json();
             if (ok) {
                 item.classList.toggle('active-orange');

@@ -130,7 +130,7 @@
         const isLiked = action.classList.contains('active-orange');
         const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { method: 'POST' });
             const ok = await res.json();
             if (ok) {
                 action.classList.toggle('active-orange');
@@ -144,7 +144,7 @@
         const isLiked = item.classList.contains('active-orange');
         const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { method: 'POST' });
             const ok = await res.json();
             if (ok) {
                 item.classList.toggle('active-orange');
