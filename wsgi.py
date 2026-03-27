@@ -6,17 +6,18 @@ config = configparser.ConfigParser()
 out = config.read('settings.ini')
 DEBUG_MODE = len(out) == 0
 
+
 if DEBUG_MODE:
   import sqlite3
-  mysql = lambda _:_
-  mysql.connector = mysql
-  mysql.connector.errors = mysql
-  mysql.connector.errors.ProgrammingError = sqlite3.OperationalError
   replchar = "?"
+  OperationalError = sqlite3.OperationalError
+  IntegrityError = sqlite3.IntegrityError
 else:
   print(config['DEFAULT']['host'])
   import mysql.connector
   replchar = "%s"
+  OperationalError = mysql.connector.errors.ProgrammingError
+  IntegrityError = mysql.connector.errors.IntegrityError
 
 def current_milli_time():
     return round(time.time() * 1000)
@@ -33,7 +34,7 @@ else:
 
 wib = flask.Flask(__name__)
 if DEBUG_MODE:
-  wib.secret_key = "BRILLIG"
+  wib.secret_key = str(current_milli_time())
 else:
   wib.secret_key = config['DEFAULT']['secret']
 
@@ -42,10 +43,7 @@ cursor = cnx.cursor()
 class post():
   def __init__(self, snowflake, owner, text, reply_to, image):
     self.snowflake = snowflake
-    if owner:
-      self.owner = owner
-    else:
-      self.owner = "anonymous"
+    self.owner = owner
     self.text = text
     self.reply_to = reply_to
     self.image = image
@@ -74,7 +72,7 @@ try:
     PRIMARY KEY (snowflake)
 )""".replace(*urlrep))
   print("users table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("users table exists.")
 
 try:
@@ -89,7 +87,7 @@ try:
     CONSTRAINT FK_reply     FOREIGN KEY (reply_to)        REFERENCES posts(snowflake)
 )""".replace(*urlrep))
   print("posts table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("posts table exists.")
 
 try:
@@ -102,7 +100,7 @@ try:
     CONSTRAINT FK_follow_leader FOREIGN KEY (leader)   REFERENCES users(snowflake)
 )""".replace(*urlrep))
   print("followers table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("followers table exists.")
 
 try:
@@ -114,7 +112,7 @@ try:
     CONSTRAINT FK_likepost   FOREIGN KEY (post)     REFERENCES posts(snowflake)
 )""".replace(*urlrep))
   print("likes table created.")
-except mysql.connector.errors.ProgrammingError:
+except OperationalError:
   print("likes table exists.")
 
 # https://i.redd.it/maes48axh3re1.jpeg
@@ -135,6 +133,13 @@ def get_posts():
   qu.execute("SELECT * FROM posts WHERE reply_to IS NULL ORDER BY snowflake DESC LIMIT 15")
   return [post(*data) for data in qu]
 
+def get_posts_by_username(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
+                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
+                WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
+  return [post(*data) for data in qu]
+
 def make_post(owner, text, reply_to, image):
   qu = cnx.cursor()
   qu.execute("""
@@ -144,6 +149,53 @@ VALUES (%s, %s, %s, %s, %s)
 """.replace("%s", replchar), (current_milli_time(), owner, text, reply_to, image, ))
   cnx.commit()
   return True
+
+def like_post(follower, post):
+  qu = cnx.cursor()
+  qu.execute("INSERT INTO likes (follower, post) VALUES (%s, %s)".replace("%s", replchar), (follower, post, ))
+  cnx.commit()
+  return True
+
+def unlike_post(follower, post):
+  qu = cnx.cursor()
+  qu.execute("DELETE FROM likes WHERE follower=%s AND post=%s".replace("%s", replchar), (follower, post, ))
+  cnx.commit()
+  return True
+
+def follow_user(follower, leader):
+  qu = cnx.cursor()
+  qu.execute("INSERT INTO follows (follower, leader, snowflake) VALUES (%s, %s, %s)".replace("%s", replchar), (follower, leader, current_milli_time()))
+  cnx.commit()
+  return True
+
+def unfollow_user(follower, leader):
+  qu = cnx.cursor()
+  qu.execute("DELETE FROM follows WHERE follower=%s AND leader=%s".replace("%s", replchar), (follower, leader, ))
+  cnx.commit()
+  return True
+
+def get_followers(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio 
+                FROM users u JOIN follows f ON u.snowflake = f.follower 
+                JOIN users target ON f.leader = target.snowflake 
+                WHERE target.username=%s""".replace("%s", replchar), (username,))
+  return [{"snowflake": r[0], "username": r[1], "displayname": r[2], "PFP": r[3], "bio": r[4]} for r in qu]
+
+def get_following(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio 
+                FROM users u JOIN follows f ON u.snowflake = f.leader 
+                JOIN users target ON f.follower = target.snowflake 
+                WHERE target.username=%s""".replace("%s", replchar), (username,))
+  return [{"snowflake": r[0], "username": r[1], "displayname": r[2], "PFP": r[3], "bio": r[4]} for r in qu]
+
+def get_like(follower, post):
+  qu = cnx.cursor()
+  qu.execute("SELECT * FROM likes WHERE follower=%s AND post=%s".replace("%s", replchar), (follower, post,))
+  for i in qu:
+    return True
+  return False
 
 def get_post(postnum):
   qu = cnx.cursor()
@@ -161,6 +213,37 @@ def index_pagehandle():
     return flask.render_template('homepage.html', posts=get_posts(), username=flask.session['username'])
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
+
+@wib.route('/@<username>')
+def specific_user_pagehandle(username):
+  qu = cnx.cursor()
+  qu.execute("SELECT snowflake, username, displayname, PFP, bio FROM users WHERE username=%s".replace("%s", replchar), (username,))
+  user_info = None
+  for row in qu:
+    user_info = {
+      "snowflake": row[0],
+      "username": row[1],
+      "displayname": row[2],
+      "PFP": row[3],
+      "bio": row[4]
+    }
+    break
+  
+  if not user_info:
+    return flask.redirect(flask.url_for('index_pagehandle'))
+    
+  posts = get_posts_by_username(username)
+  return flask.render_template('specific_user.html', posts=posts, user=user_info)
+
+@wib.route('/@<username>/followers')
+def followers_pagehandle(username):
+  followers = get_followers(username)
+  return flask.render_template('followers.html', followers=followers, username=username)
+
+@wib.route('/@<username>/following')
+def following_pagehandle(username):
+  following = get_following(username)
+  return flask.render_template('following.html', following=following, username=username)
 
 @wib.route('/login', methods=['GET', 'POST'])
 def login_pagehandle():
@@ -183,7 +266,7 @@ def login_pagehandle():
     flask.session['snowflake'] = snowflake
     flask.session['username'] = username
     return flask.redirect(flask.url_for('index_pagehandle'))
-  return flask.render_template('login.html', error="Username and Password not found.")
+  return flask.render_template('login.html', error="Username and Password not found."), 401
 
 @wib.route('/register', methods=['GET', 'POST'])
 def register_pagehandle():
@@ -199,13 +282,12 @@ def register_pagehandle():
     username_try = username_try[1:]
 
   if not 6 <= len(password_try) <= 128:
-    return flask.render_template('register.html', error="Password must be between 6 and 128 characters.")
+    return flask.render_template('register.html', error="Password must be between 6 and 128 characters."), 422
 
   try:
-    print( username_try, password_try.encode("UTF8").hex() )
     create_user(username_try, password_try)
-  except sqlite3.IntegrityError:
-    return flask.render_template('register.html', error="Username Taken.")
+  except IntegrityError:
+    return flask.render_template('register.html', error="Username Taken."), 409
 
   return flask.redirect(flask.url_for('login_pagehandle'))
 
@@ -213,6 +295,7 @@ def register_pagehandle():
 def logout_pagehandle():
     # remove the username from the flask.session if it's there
     flask.session.pop('username', None)
+    flask.session.pop('snowflake', None)
     return flask.redirect(flask.url_for('index_pagehandle'))
 
 @wib.route('/create', methods=['GET', 'POST'])
@@ -221,18 +304,25 @@ def create_pagehandle():
     return flask.redirect(flask.url_for('index_pagehandle'))
 
   owner = flask.session['snowflake']
-  if flask.request.form.get('anon'):
-    owner = 0
-  print(owner)
 
   make_post(owner, flask.request.form.get("text", ""), None, flask.request.form.get("image", ""))
 
   return flask.redirect(flask.url_for('index_pagehandle'))
 
-@wib.route('/post/<int:post_id>')
-def show_post_pagehandle(post_id):
-  #assert typeof(post_id, int)
-  return [get_post(post_id), get_sub_posts(post_id)]
+@wib.route('/reply/<int:post_id>', methods=['GET', 'POST'])
+def reply_pagehandle(post_id):
+  if flask.request.method == 'GET':
+    return flask.redirect(flask.url_for('index_pagehandle'))
+
+  owner = flask.session['snowflake']
+
+  make_post(owner, flask.request.form.get("text", ""), post_id, flask.request.form.get("image", ""))
+
+  return flask.redirect(flask.url_for('index_pagehandle'))
+
+@wib.route('/@<username>/<int:post_id>')
+def show_post_pagehandle(username, post_id):
+  return flask.render_template('specific_post.html', post=get_post(post_id))
 
 @wib.route('/reboot', methods=['GET', 'POST'])
 def reboot_pagehandle():
@@ -246,3 +336,66 @@ def reboot_pagehandle():
     if m.hexdigest().upper() == "3DA5DAC093EFA65422CBB22AF4588C65":
       os.kill(os.getpid(), signal.SIGINT)
   return '<form method="post"><p><input type=text name=REBOOTCODE><p><input type=submit value=REBOOT></form>'
+
+# === API ===
+
+@wib.route('/user.json/@<username>')
+def user_apihandle(username):
+  qu = cnx.cursor()
+  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
+                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
+                WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
+  posts = []
+  for snowflake, owner_snowflake, text, reply_to, image in qu:
+    posts.append({
+      "snowflake": snowflake,
+      "owner_snowflake": owner_snowflake,
+      "text": text,
+      "reply_to": reply_to,
+      "image": image
+    })
+  return flask.jsonify(posts)
+
+@wib.route('/post.json/<int:post_id>')
+def post_apihandle(post_id):
+  qu = cnx.cursor()
+  qu.execute("SELECT snowflake, owner_snowflake, text, reply_to, image FROM posts WHERE snowflake=%s".replace("%s", replchar), (post_id) )
+  for snowflake, owner_snowflake, text, reply_to, image in qu:
+    return {"snowflake": snowflake, "owner_snowflake": owner_snowflake, "text": text, "reply_to": reply_to, "image": image}
+  return {}
+
+@wib.route('/like.json/<int:post_id>')
+def like_apihandle(post_id):
+  qu = cnx.cursor()
+  try:
+    like_post(flask.session['snowflake'], post_id)
+    return flask.jsonify(True), 200
+  except:
+    return flask.jsonify(False), 409
+
+@wib.route('/unlike.json/<int:post_id>')
+def unlike_apihandle(post_id):
+  qu = cnx.cursor()
+  try:
+    unlike_post(flask.session['snowflake'], post_id)
+    return flask.jsonify(True), 200
+  except:
+    return flask.jsonify(False), 409
+
+@wib.route('/follow.json/<int:leader_id>')
+def follow_apihandle(leader_id):
+  qu = cnx.cursor()
+  try:
+    follow_user(flask.session['snowflake'], leader_id)
+    return flask.jsonify(True), 200
+  except:
+    return flask.jsonify(False), 409
+
+@wib.route('/unfollow.json/<int:leader_id>')
+def unfollow_apihandle(leader_id):
+  qu = cnx.cursor()
+  try:
+    unfollow_user(flask.session['snowflake'], leader_id)
+    return flask.jsonify(True), 200
+  except:
+    return flask.jsonify(False), 409
