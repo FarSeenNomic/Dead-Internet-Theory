@@ -67,7 +67,8 @@ def show_post_enhanced(username, post_id):
         user_liked = get_like(flask.session['snowflake'], post_id)
     return flask.render_template('specific_post.html',
         post=p, replies=replies, like_count=like_count,
-        user_liked=user_liked, username=flask.session.get('username', ''))
+        user_liked=user_liked, username=flask.session.get('username', ''),
+        userPFP=flask.session.get('PFP'))
 
 wib.view_functions['show_post_pagehandle'] = show_post_enhanced
 

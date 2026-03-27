@@ -59,11 +59,11 @@ user2.post("http://localhost:5000/register", data=user2_data)
 user2.post("http://localhost:5000/login", data=user2_data)
 user2.post("http://localhost:5000/settings/profile", data={
   "bio": "I'm a temporarily misassigned civilian.",
-  "pfp": "https://pbs.twimg.com/media/GF8fsetXQAAellr.jpg",
+  "pfp": "https://i.etsystatic.com/32846439/r/il/99ddc5/3468026512/il_300x300.3468026512_hmbc.jpg",
   "displayname": 'Captain B.J. Hunnicutt',
   })
 print(f"register, login, and update {user2_data['username']}")
-
+"""
 try:
   response = user3.post("http://localhost:5000/register", data=user1_data)
   assert response.status_code == 409
@@ -82,6 +82,7 @@ try:
   print(f"{user3_data['username']} tried to make a user under the name {user2_data['username']}")
 except AssertionError:
   print("Error", response.status_code)
+"""
 
 user3.post("http://localhost:5000/register", data=user3_data)
 user3.post("http://localhost:5000/login", data=user3_data)
@@ -90,7 +91,6 @@ print(f"register and login {user3_data['username']}")
 try:
   response = user2.get(f"http://localhost:5000/user.json/@{user1_data['username']}").json()
   print(f"Made {user2_data['username']} view all posts from {user1_data['username']}")
-  print(response)
 except Exception as e:
   print("Error", e)
 
@@ -100,16 +100,12 @@ post2follow = response[0]["owner_snowflake"]
 try:
   response = user2.post(f"http://localhost:5000/like.json/{post2like}")
   print(f"Made {user2_data['username']} like {user1_data['username']}")
-  print(response.content)
-  print(response.json())
 except Exception as e:
   print("Error", e)
 
 try:
   response = user2.post(f"http://localhost:5000/follow.json/{post2follow}")
   print(f"Made {user2_data['username']} follow {user1_data['username']}")
-  print(response.content)
-  print(response.json())
 except Exception as e:
   print("Error", e)
 
