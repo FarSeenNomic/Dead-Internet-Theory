@@ -9,9 +9,11 @@
     <div class="profile-info">
         <div class="profile-avatar-large">
             {% if user.PFP and user.PFP != '/noPFP.jpg' and user.PFP != '' %}
-            <img src="{{ user.PFP }}" alt="{{ user.username }}" onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1e293b&color=fff&size=200&bold=true'">
+            <img src="{{ user.PFP }}" alt="{{ user.username }}"
+                onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1e293b&color=fff&size=200&bold=true'">
             {% else %}
-            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=1e293b&color=fff&size=200&bold=true" alt="{{ user.username }}">
+            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=1e293b&color=fff&size=200&bold=true"
+                alt="{{ user.username }}">
             {% endif %}
         </div>
 
@@ -26,7 +28,7 @@
         </div>
 
         <div class="profile-names">
-            <span class="profile-displayname">{{ user.displayname or user.username|upper }}</span>
+            <span class="profile-displayname">{{ user.displayname }}</span>
             <span class="profile-username">@{{ user.username }}</span>
         </div>
 
@@ -52,12 +54,12 @@
     {% for p in posts %}
     <article class="post-card">
         <div class="post-avatar">
-            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=random&size=120&bold=true" alt="Avatar">
+            <img src="{{ p.owner_pfp }}" alt="Avatar">
         </div>
         <div class="post-content">
             <div class="post-header">
-                <span class="post-name">{{ user.username|upper }}</span>
-                <span class="post-handle">@{{ user.username|lower }}</span>
+                <span class="post-name">{{ p.owner_displayname }}</span>
+                <span class="post-handle">@{{ p.owner_username }}</span>
                 <span class="post-dot">&middot;</span>
                 <a href="/@{{ user.username }}/{{ p.snowflake }}" class="post-time">View</a>
             </div>
@@ -75,7 +77,8 @@
                         <i class="icon" data-lucide="message-square"></i>
                     </a>
                 </div>
-                <div class="action-item like-toggle-{{ p.snowflake }} {% if check_liked(p.snowflake) %}active-orange{% endif %}">
+                <div
+                    class="action-item like-toggle-{{ p.snowflake }} {% if check_liked(p.snowflake) %}active-orange{% endif %}">
                     <button type="button" class="action-btn" onclick="toggleLike({{ p.snowflake }})">
                         <i class="icon" data-lucide="triangle"></i>
                     </button>
@@ -95,36 +98,36 @@
 </div>
 
 <script>
-async function toggleFollow(userId) {
-    const btn = document.getElementById('follow-btn');
-    const txt = document.getElementById('follow-text');
-    const isFollowing = txt.textContent === 'FOLLOWING';
-    const url = isFollowing ? `/unfollow.json/${userId}` : `/follow.json/${userId}`;
-    try {
-        const res = await fetch(url);
-        const ok = await res.json();
-        if (ok) {
-            txt.textContent = isFollowing ? 'FOLLOW' : 'FOLLOWING';
-            btn.classList.toggle('btn-primary');
-            btn.classList.toggle('btn-secondary');
-            const fc = document.getElementById('follower-count');
-            fc.textContent = parseInt(fc.textContent) + (isFollowing ? -1 : 1);
-        }
-    } catch(e) { console.error(e); }
-}
-async function toggleLike(postId) {
-    const item = document.querySelector(`.like-toggle-${postId}`);
-    const isLiked = item.classList.contains('active-orange');
-    const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
-    try {
-        const res = await fetch(url);
-        const ok = await res.json();
-        if (ok) {
-            item.classList.toggle('active-orange');
-            const c = document.getElementById(`likes-${postId}`);
-            c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
-        }
-    } catch(e) { console.error(e); }
-}
+    async function toggleFollow(userId) {
+        const btn = document.getElementById('follow-btn');
+        const txt = document.getElementById('follow-text');
+        const isFollowing = txt.textContent === 'FOLLOWING';
+        const url = isFollowing ? `/unfollow.json/${userId}` : `/follow.json/${userId}`;
+        try {
+            const res = await fetch(url);
+            const ok = await res.json();
+            if (ok) {
+                txt.textContent = isFollowing ? 'FOLLOW' : 'FOLLOWING';
+                btn.classList.toggle('btn-primary');
+                btn.classList.toggle('btn-secondary');
+                const fc = document.getElementById('follower-count');
+                fc.textContent = parseInt(fc.textContent) + (isFollowing ? -1 : 1);
+            }
+        } catch (e) { console.error(e); }
+    }
+    async function toggleLike(postId) {
+        const item = document.querySelector(`.like-toggle-${postId}`);
+        const isLiked = item.classList.contains('active-orange');
+        const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+        try {
+            const res = await fetch(url);
+            const ok = await res.json();
+            if (ok) {
+                item.classList.toggle('active-orange');
+                const c = document.getElementById(`likes-${postId}`);
+                c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+            }
+        } catch (e) { console.error(e); }
+    }
 </script>
 {% endblock %}

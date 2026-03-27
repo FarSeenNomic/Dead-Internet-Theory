@@ -45,12 +45,25 @@ class post():
     self.snowflake = snowflake
     self.owner = owner
     self.owner_pfp = ""
+    self.owner_username = ""
+    self.owner_displayname = ""
     self.text = text
     self.reply_to = reply_to
     self.image = image
     self.comment_count = 0
     self.repost_count = 0
     self.like_count = 0
+
+    self.comment_count = get_reply_count(self.snowflake)
+    #self.repost_count = get_repost_count(self.snowflake)
+    self.like_count = get_like_count(self.snowflake)
+    qu = cnx.cursor()
+    qu.execute("SELECT PFP, username, displayname FROM users WHERE snowflake=%s LIMIT 1".replace("%s", replchar), (self.owner,)) #TODO: Cache
+    for row in qu:
+      self.owner_pfp = row[0]
+      self.owner_username = row[1]
+      self.owner_displayname = row[2] or self.owner_username
+      break
 
 '''
 try:
@@ -128,11 +141,11 @@ def create_user(nam, pas):
     INSERT INTO users
     (snowflake, username, password, displayname, PFP, bio)
     VALUES (%s, %s, %s, %s, %s, %s)""".replace("%s", replchar),
-    (time, nam, pas.encode("UTF8").hex(), None, "/noPFP.jpg", "<ASL>? DTF.", )
+    (time, nam, pas.encode("UTF8").hex(), None, "https://www.marclittlemore.com/easily-create-gravatar-images-with-eleventy/TZQgcTQa8R-256.jpeg", "<ASL>? DTF.", )
   )
   return time
 
-def get_posts(snowflake=0, *, include_counts=False):
+def get_posts(snowflake=0):
   qu = cnx.cursor()
   if snowflake:
     qu.execute("SELECT * FROM posts WHERE reply_to=%s ORDER BY snowflake DESC LIMIT 255".replace("%s", replchar), (snowflake,))
@@ -141,11 +154,6 @@ def get_posts(snowflake=0, *, include_counts=False):
   postc = []
   for data in qu:
     postc.append(post(*data))
-  if include_counts:
-    for data in postc:
-      data.comment_count = get_reply_count(data.snowflake)
-      #data.repost_count = get_repost_count(data.snowflake)
-      data.like_count = get_like_count(data.snowflake)
   return postc
 
 def get_reply_count(snowflake):
@@ -170,10 +178,6 @@ def get_posts_by_username(username):
   postc = []
   for data in qu:
     postc.append(post(*data))
-  for data in postc:
-    data.comment_count = get_reply_count(data.snowflake)
-    #data.repost_count = get_repost_count(data.snowflake)
-    data.like_count = get_like_count(data.snowflake)
   return postc
 
 def make_post(owner, text, reply_to, image):
@@ -246,7 +250,12 @@ def get_sub_posts(postnum):
 @wib.route("/")
 def index_pagehandle():
   if 'username' in flask.session:
-    return flask.render_template('homepage.html', posts=get_posts(include_counts=True), username=flask.session.get('username'))
+    return flask.render_template(
+      'homepage.html',
+      username=flask.session.get('username'),
+      userPFP=flask.session.get('PFP'),
+      posts=get_posts(),
+      )
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
 
@@ -296,11 +305,12 @@ def login_pagehandle():
   if username_try.startswith("@"):
     username_try = username_try[1:]
 
-  qu.execute("SELECT snowflake, username FROM users WHERE USERNAME=%s AND PASSWORD=%s".replace("%s", replchar),
+  qu.execute("SELECT snowflake, username, PFP FROM users WHERE USERNAME=%s AND PASSWORD=%s".replace("%s", replchar),
     (username_try, password_try.encode("UTF8").hex(), ))
-  for snowflake, username in qu:
+  for snowflake, username, PFP in qu:
     flask.session['snowflake'] = snowflake
     flask.session['username'] = username
+    flask.session['PFP'] = PFP
     return flask.redirect(flask.url_for('index_pagehandle'))
   return flask.render_template('login.html', error="Username and Password not found."), 401
 
@@ -362,7 +372,11 @@ def reply_pagehandle(post_id):
 
 @wib.route('/@<username>/<int:post_id>')
 def show_post_pagehandle(username, post_id):
-  return flask.render_template('specific_post.html', post=get_post(post_id))
+  return flask.render_template('specific_post.html',
+      post=get_post(post_id),
+      username=flask.session.get('username'),
+      userPFP=flask.session.get('PFP'),
+      )
 
 @wib.route('/reboot', methods=['GET', 'POST'])
 def reboot_pagehandle():

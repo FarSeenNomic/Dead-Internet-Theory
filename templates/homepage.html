@@ -7,27 +7,35 @@
 <div class="composer-section">
     <div class="composer-wrapper">
         <div class="composer-avatar">
-            <img src="https://ui-avatars.com/api/?name={{ username }}&background=1e293b&color=fff&size=120&bold=true" alt="Avatar">
+            <img src="{{ userPFP }}" alt="Avatar">
         </div>
         <div class="composer-body">
             <form action="/create" method="POST" id="compose-form" novalidate>
                 <div style="position: relative;">
-                    <textarea name="text" id="composer-text" class="composer-input" placeholder="Trumpet your thoughts..." autofocus rows="2"></textarea>
-                    <div id="custom-tooltip" style="display: none; position: absolute; bottom: 80px; left: 15px; background: #fff; border: 2px solid var(--navy); padding: 0.5rem 1rem; color: var(--navy); font-weight: 800; font-size: 0.85rem; box-shadow: 4px 4px 0px 0px var(--orange); z-index: 10;">
-                        <i data-lucide="alert-circle" style="width: 16px; height: 16px; margin-right: 5px; vertical-align: sub;"></i> PLEASE FILL OUT THIS FIELD
+                    <textarea name="text" id="composer-text" class="composer-input"
+                        placeholder="Trumpet your thoughts..." autofocus rows="2"></textarea>
+                    <div id="custom-tooltip"
+                        style="display: none; position: absolute; bottom: 80px; left: 15px; background: #fff; border: 2px solid var(--navy); padding: 0.5rem 1rem; color: var(--navy); font-weight: 800; font-size: 0.85rem; box-shadow: 4px 4px 0px 0px var(--orange); z-index: 10;">
+                        <i data-lucide="alert-circle"
+                            style="width: 16px; height: 16px; margin-right: 5px; vertical-align: sub;"></i> PLEASE FILL
+                        OUT THIS FIELD
                     </div>
                 </div>
-                
+
                 <!-- Anonymous toggle for backend compatibility hidden but default false -->
                 <input type="hidden" name="anon" value="">
-                
+
                 <div class="composer-actions">
                     <div class="composer-tools">
-                        <button type="button" class="tool-btn" onclick="const el = document.getElementById('image-url-input'); el.style.display = el.style.display === 'none' ? 'block' : 'none';"><i data-lucide="image"></i></button>
+                        <button type="button" class="tool-btn"
+                            onclick="const el = document.getElementById('image-url-input'); el.style.display = el.style.display === 'none' ? 'block' : 'none';"><i
+                                data-lucide="image"></i></button>
                     </div>
                     <button type="button" id="senddit-btn" class="btn btn-primary">SEND'DIT</button>
                 </div>
-                <input type="url" name="image" id="image-url-input" class="composer-input" placeholder="Paste image URL here..." style="display: none; min-height: 40px; margin-top: 0.75rem; font-size: 0.95rem; padding: 0.5rem 1rem;">
+                <input type="url" name="image" id="image-url-input" class="composer-input"
+                    placeholder="Paste image URL here..."
+                    style="display: none; min-height: 40px; margin-top: 0.75rem; font-size: 0.95rem; padding: 0.5rem 1rem;">
             </form>
         </div>
     </div>
@@ -37,44 +45,47 @@
     {% for post in posts %}
     <article class="post-card">
         <div class="post-avatar">
-            <a href="/@{{ post.owner|to_username }}">
-                <img src="https://ui-avatars.com/api/?name={{ post.owner|to_username }}&background=random&size=120&bold=true" alt="Avatar">
+            <a href="/@{{ post.owner_displayname }}">
+                <img src="{{ post.owner_pfp }}" alt="Avatar">
             </a>
         </div>
         <div class="post-content">
             <div class="post-header">
-                <a href="/@{{ post.owner|to_username }}" class="post-name-link">
-                    <span class="post-name">{{ post.owner|to_username|upper }}</span>
+                <a href="/@{{ post.owner_displayname }}" class="post-name-link">
+                    <span class="post-name">{{ post.owner_username }}</span>
                 </a>
-                <span class="post-handle">@{{ post.owner|to_username|lower }}</span>
+                <span class="post-handle">@{{ post.username }}</span>
                 <span class="post-dot">&middot;</span>
-                <a href="/@{{ post.owner|to_username }}/{{ post.snowflake }}" class="post-time">View</a>
+                <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" class="post-time">View</a>
                 {% if post.reply_to %}
                 <span class="post-replying-to" style="margin-left:auto;">Replying to #{{ post.reply_to }}</span>
                 {% endif %}
             </div>
-            
-            <a href="/@{{ post.owner|to_username }}/{{ post.snowflake }}" style="text-decoration:none;color:inherit;">
+
+            <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" style="text-decoration:none;color:inherit;">
                 <div class="post-text">{{ post.text }}</div>
             </a>
-            
+
             {% if post.image and post.image != 'None' and post.image != '' %}
             <div class="post-media">
                 <img src="{{ post.image }}" alt="Post attachment" onerror="this.style.display='none'">
             </div>
             {% endif %}
-            
+
             <div class="post-actions">
                 <div class="action-item">
-                    <a href="/@{{ post.owner|to_username }}/{{ post.snowflake }}" class="action-btn" style="color:inherit;"><i class="icon" data-lucide="message-square"></i></a>
+                    <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" class="action-btn"
+                        style="color:inherit;"><i class="icon" data-lucide="message-square"></i></a>
                     <span class="action-count">{{ get_replies(post.snowflake) }}</span>
                 </div>
                 <div class="action-item">
                     <button type="button" class="action-btn"><i class="icon" data-lucide="repeat"></i></button>
                     <span class="action-count">0</span>
                 </div>
-                <div class="action-item like-toggle-{{ post.snowflake }} {% if check_liked(post.snowflake) %}active-orange{% endif %}">
-                    <button type="button" class="action-btn" onclick="toggleLike({{ post.snowflake }})"><i class="icon" data-lucide="triangle"></i></button>
+                <div
+                    class="action-item like-toggle-{{ post.snowflake }} {% if check_liked(post.snowflake) %}active-orange{% endif %}">
+                    <button type="button" class="action-btn" onclick="toggleLike({{ post.snowflake }})"><i class="icon"
+                            data-lucide="triangle"></i></button>
                     <span class="action-count" id="likes-{{ post.snowflake }}">{{ get_likes(post.snowflake) }}</span>
                 </div>
                 <div class="action-item">
@@ -92,44 +103,44 @@
 
 <!-- AJAX Post Submission + Flashy Animation (no page reload) -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('senddit-btn');
-    if (btn) {
-        btn.addEventListener('click', async () => {
-            const textEl = document.getElementById('composer-text');
-            const text = textEl.value.trim();
-            if (!text) {
-                const tooltip = document.getElementById('custom-tooltip');
-                tooltip.style.display = 'block';
-                tooltip.style.animation = 'none';
-                void tooltip.offsetWidth;
-                tooltip.style.animation = 'bounceShake 0.4s cubic-bezier(.36,.07,.19,.97) both';
-                setTimeout(() => tooltip.style.display = 'none', 3000);
-                return;
-            }
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('senddit-btn');
+        if (btn) {
+            btn.addEventListener('click', async () => {
+                const textEl = document.getElementById('composer-text');
+                const text = textEl.value.trim();
+                if (!text) {
+                    const tooltip = document.getElementById('custom-tooltip');
+                    tooltip.style.display = 'block';
+                    tooltip.style.animation = 'none';
+                    void tooltip.offsetWidth;
+                    tooltip.style.animation = 'bounceShake 0.4s cubic-bezier(.36,.07,.19,.97) both';
+                    setTimeout(() => tooltip.style.display = 'none', 3000);
+                    return;
+                }
 
-            // Grab image URL if any
-            const imageEl = document.getElementById('image-url-input');
-            const image = imageEl ? imageEl.value.trim() : '';
+                // Grab image URL if any
+                const imageEl = document.getElementById('image-url-input');
+                const image = imageEl ? imageEl.value.trim() : '';
 
-            // Submit via AJAX — no page reload
-            const formData = new FormData(document.getElementById('compose-form'));
-            try {
-                await fetch('/create', { method: 'POST', body: formData });
-            } catch (err) {
-                console.error('Post failed:', err);
-                return;
-            }
+                // Submit via AJAX — no page reload
+                const formData = new FormData(document.getElementById('compose-form'));
+                try {
+                    await fetch('/create', { method: 'POST', body: formData });
+                } catch (err) {
+                    console.error('Post failed:', err);
+                    return;
+                }
 
-            // Clear inputs
-            textEl.value = '';
-            if (imageEl) { imageEl.value = ''; imageEl.style.display = 'none'; }
+                // Clear inputs
+                textEl.value = '';
+                if (imageEl) { imageEl.value = ''; imageEl.style.display = 'none'; }
 
-            // Build the new post card in the DOM
-            const username = '{{ username }}';
-            const newCard = document.createElement('article');
-            newCard.className = 'post-card';
-            newCard.innerHTML = `
+                // Build the new post card in the DOM
+                const username = '{{ username }}';
+                const newCard = document.createElement('article');
+                newCard.className = 'post-card';
+                newCard.innerHTML = `
                 <div class="post-avatar">
                     <a href="/@${username}">
                         <img src="https://ui-avatars.com/api/?name=${username}&background=random&size=120&bold=true" alt="Avatar">
@@ -144,8 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="post-dot">&middot;</span>
                         <span class="post-time">now</span>
                     </div>
-                    <div class="post-text">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-                    ${image ? '<div class="post-media"><img src="'+image+'" alt="Post attachment" onerror="this.style.display=\'none\'"></div>' : ''}
+                    <div class="post-text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                    ${image ? '<div class="post-media"><img src="' + image + '" alt="Post attachment" onerror="this.style.display=\'none\'"></div>' : ''}
                     <div class="post-actions">
                         <div class="action-item">
                             <span class="action-btn" style="color:inherit;"><i data-lucide="message-square"></i></span>
@@ -166,287 +177,287 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // Remove "No posts yet" empty state if present
-            const emptyState = document.querySelector('.empty-state');
-            if (emptyState) emptyState.remove();
+                // Remove "No posts yet" empty state if present
+                const emptyState = document.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
 
-            // Insert at top of feed
-            const feed = document.querySelector('.feed-section');
-            feed.insertBefore(newCard, feed.firstChild);
+                // Insert at top of feed
+                const feed = document.querySelector('.feed-section');
+                feed.insertBefore(newCard, feed.firstChild);
 
-            // Render the Lucide icons inside the new card
-            if (window.lucide) lucide.createIcons();
+                // Render the Lucide icons inside the new card
+                if (window.lucide) lucide.createIcons();
 
-            // ── FLASHY 3-STAGE ANIMATION ──
+                // ── FLASHY 3-STAGE ANIMATION ──
 
-            const finalAngle = (Math.random() * 3 - 1.5).toFixed(2);
+                const finalAngle = (Math.random() * 3 - 1.5).toFixed(2);
 
-            // STAGE 1: Start state — off below, small, hard rotation, invisible
-            newCard.style.transition = 'none';
-            newCard.style.transform = 'translateY(80px) scale(0.4) rotate(' + (Math.random() > 0.5 ? 15 : -15) + 'deg)';
-            newCard.style.opacity = '0';
-            newCard.style.transformOrigin = 'center center';
-            newCard.style.boxShadow = '0 0 0px 0px rgba(249, 115, 22, 0)';
-            void newCard.offsetWidth;
+                // STAGE 1: Start state — off below, small, hard rotation, invisible
+                newCard.style.transition = 'none';
+                newCard.style.transform = 'translateY(80px) scale(0.4) rotate(' + (Math.random() > 0.5 ? 15 : -15) + 'deg)';
+                newCard.style.opacity = '0';
+                newCard.style.transformOrigin = 'center center';
+                newCard.style.boxShadow = '0 0 0px 0px rgba(249, 115, 22, 0)';
+                void newCard.offsetWidth;
 
-            // STAGE 2: Slam in with orange glow burst
-            newCard.style.transition = 'transform 1s cubic-bezier(0.22, 1.2, 0.36, 1), opacity 0.4s ease-out, box-shadow 0.6s ease-out';
-            newCard.style.transform = 'translateY(0) scale(1.03) rotate(' + finalAngle + 'deg)';
-            newCard.style.opacity = '1';
-            newCard.style.boxShadow = '0 0 30px 8px rgba(249, 115, 22, 0.45), 6px 6px 0px 0px var(--navy)';
+                // STAGE 2: Slam in with orange glow burst
+                newCard.style.transition = 'transform 1s cubic-bezier(0.22, 1.2, 0.36, 1), opacity 0.4s ease-out, box-shadow 0.6s ease-out';
+                newCard.style.transform = 'translateY(0) scale(1.03) rotate(' + finalAngle + 'deg)';
+                newCard.style.opacity = '1';
+                newCard.style.boxShadow = '0 0 30px 8px rgba(249, 115, 22, 0.45), 6px 6px 0px 0px var(--navy)';
 
-            // STAGE 3: Settle — scale correction + glow fade
-            setTimeout(() => {
-                newCard.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1.2s ease-out';
-                newCard.style.transform = 'scale(1) rotate(' + finalAngle + 'deg)';
-                newCard.style.boxShadow = '';
-            }, 500);
-
-            // Composer: dramatic tilt + settle
-            const composer = document.querySelector('.composer-section');
-            if (composer) {
-                const tilt = (Math.random() > 0.5 ? 8 : -8).toFixed(1);
-                const settle = (Math.random() * 6 - 3).toFixed(2);
-                composer.style.transition = 'transform 0.6s cubic-bezier(0.22, 1.2, 0.36, 1), box-shadow 0.5s ease';
-                composer.style.transform = 'rotate(' + tilt + 'deg) scale(0.98)';
-                composer.style.boxShadow = '0 0 20px 4px rgba(249, 115, 22, 0.25), 6px 6px 0px 0px var(--navy)';
+                // STAGE 3: Settle — scale correction + glow fade
                 setTimeout(() => {
-                    composer.style.transition = 'transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1s ease';
-                    composer.style.transform = 'rotate(' + settle + 'deg) scale(1)';
-                    composer.style.boxShadow = '6px 6px 0px 0px var(--navy)';
-                }, 400);
-            }
+                    newCard.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1.2s ease-out';
+                    newCard.style.transform = 'scale(1) rotate(' + finalAngle + 'deg)';
+                    newCard.style.boxShadow = '';
+                }, 500);
 
-            // Other cards: staggered cascade shuffle
-            const allCards = document.querySelectorAll('.post-card');
-            allCards.forEach((card, i) => {
-                if (i === 0) return;
-                const angle = (Math.random() * 2.5 - 1.25).toFixed(2);
-                setTimeout(() => {
-                    card.style.transition = 'transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)';
-                    card.style.transform = 'rotate(' + angle + 'deg)';
-                }, 200 + (i * 80));
-            });
+                // Composer: dramatic tilt + settle
+                const composer = document.querySelector('.composer-section');
+                if (composer) {
+                    const tilt = (Math.random() > 0.5 ? 8 : -8).toFixed(1);
+                    const settle = (Math.random() * 6 - 3).toFixed(2);
+                    composer.style.transition = 'transform 0.6s cubic-bezier(0.22, 1.2, 0.36, 1), box-shadow 0.5s ease';
+                    composer.style.transform = 'rotate(' + tilt + 'deg) scale(0.98)';
+                    composer.style.boxShadow = '0 0 20px 4px rgba(249, 115, 22, 0.25), 6px 6px 0px 0px var(--navy)';
+                    setTimeout(() => {
+                        composer.style.transition = 'transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1s ease';
+                        composer.style.transform = 'rotate(' + settle + 'deg) scale(1)';
+                        composer.style.boxShadow = '6px 6px 0px 0px var(--navy)';
+                    }, 400);
+                }
 
-            // Persist angles
-            setTimeout(() => {
-                const boxes = document.querySelectorAll('.post-card, .auth-container, .composer-section');
-                const angles = [];
-                boxes.forEach(b => {
-                    const m = (b.style.transform || '').match(/rotate\(([^)]+)deg\)/);
-                    angles.push(m ? m[1] : '0');
+                // Other cards: staggered cascade shuffle
+                const allCards = document.querySelectorAll('.post-card');
+                allCards.forEach((card, i) => {
+                    if (i === 0) return;
+                    const angle = (Math.random() * 2.5 - 1.25).toFixed(2);
+                    setTimeout(() => {
+                        card.style.transition = 'transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                        card.style.transform = 'rotate(' + angle + 'deg)';
+                    }, 200 + (i * 80));
                 });
-                sessionStorage.setItem('boxAngles_' + window.location.pathname, JSON.stringify(angles));
-            }, 2000);
-        });
-    }
-});
-async function toggleLike(postId) {
-    const item = document.querySelector(`.like-toggle-${postId}`);
-    const isLiked = item.classList.contains('active-orange');
-    const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
-    try {
-        const res = await fetch(url);
-        const ok = await res.json();
-        if (ok) {
-            item.classList.toggle('active-orange');
-            const c = document.getElementById(`likes-${postId}`);
-            c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+
+                // Persist angles
+                setTimeout(() => {
+                    const boxes = document.querySelectorAll('.post-card, .auth-container, .composer-section');
+                    const angles = [];
+                    boxes.forEach(b => {
+                        const m = (b.style.transform || '').match(/rotate\(([^)]+)deg\)/);
+                        angles.push(m ? m[1] : '0');
+                    });
+                    sessionStorage.setItem('boxAngles_' + window.location.pathname, JSON.stringify(angles));
+                }, 2000);
+            });
         }
-    } catch(e) { console.error(e); }
-}
+    });
+    async function toggleLike(postId) {
+        const item = document.querySelector(`.like-toggle-${postId}`);
+        const isLiked = item.classList.contains('active-orange');
+        const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+        try {
+            const res = await fetch(url);
+            const ok = await res.json();
+            if (ok) {
+                item.classList.toggle('active-orange');
+                const c = document.getElementById(`likes-${postId}`);
+                c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+            }
+        } catch (e) { console.error(e); }
+    }
 </script>
 
 
 <!-- Easter Egg Gravity Physics -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    let clickCount = 0;
-    const composer = document.querySelector('.composer-section');
-    if(!composer) return;
+    document.addEventListener('DOMContentLoaded', () => {
+        let clickCount = 0;
+        const composer = document.querySelector('.composer-section');
+        if (!composer) return;
 
-    composer.addEventListener('click', (e) => {
-        if(e.target.closest('button') || e.target.closest('textarea') || e.target.closest('input') || e.target.tagName === 'A' || e.target.tagName === 'I') return;
-        clickCount++;
-        if(clickCount >= 5) {
-            initGravityMadness();
-        }
-    });
-
-    function initGravityMadness() {
-        if (window.madnessRunning) return;
-        window.madnessRunning = true;
-
-        const { Engine, Runner, Bodies, Composite, Body, Vector } = Matter;
-        const engine = Engine.create();
-        const world = engine.world;
-        engine.world.gravity.y = 0;
-        engine.world.gravity.x = 0;
-
-        document.body.style.overflow = 'hidden';
-
-        const ground = Bodies.rectangle(window.innerWidth/2, window.innerHeight + 250, window.innerWidth*2, 500, { isStatic: true });
-        const limitTop = Bodies.rectangle(window.innerWidth/2, -250, window.innerWidth*2, 500, { isStatic: true });
-        const wallL = Bodies.rectangle(-250, window.innerHeight/2, 500, window.innerHeight*2, { isStatic: true });
-        const wallR = Bodies.rectangle(window.innerWidth+250, window.innerHeight/2, 500, window.innerHeight*2, { isStatic: true });
-        Composite.add(world, [ground, limitTop, wallL, wallR]);
-
-        const domBodies = [];
-
-        // Detach components
-        const posts = document.querySelectorAll('.post-card');
-        posts.forEach(post => {
-            const parts = post.querySelectorAll('.post-avatar, .post-header, .post-text, .post-media img, .action-item');
-            parts.forEach(part => {
-                const rect = part.getBoundingClientRect();
-                if(rect.width === 0 || rect.height === 0) return;
-                
-                const clone = part.cloneNode(true);
-                clone.style.position = 'fixed';
-                clone.style.margin = '0';
-                clone.style.top = '0px';
-                clone.style.left = '0px';
-                clone.style.width = rect.width + 'px';
-                clone.style.height = rect.height + 'px';
-                clone.style.zIndex = '9999';
-                clone.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
-                clone.style.willChange = 'transform';
-                clone.style.color = window.getComputedStyle(part).color;
-                
-                if (part.classList.contains('post-text') || part.classList.contains('post-header')) {
-                    clone.style.backgroundColor = '#fff';
-                    clone.style.boxShadow = '2px 2px 0px 0px var(--navy)';
-                    clone.style.border = '2px solid var(--border-color)';
-                }
-                
-                document.body.appendChild(clone);
-                
-                const body = Bodies.rectangle(
-                    rect.left + rect.width/2,
-                    rect.top + rect.height/2,
-                    rect.width,
-                    rect.height,
-                    { restitution: 0.9, friction: 0, frictionAir: 0, density: 0.01 }
-                );
-                
-                Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.1);
-                Composite.add(world, body);
-                domBodies.push({ el: clone, body: body, w: rect.width, h: rect.height, orig: part });
-            });
-            post.style.visibility = 'hidden';
-        });
-
-        // Add composer box to physics
-        const compRect = composer.getBoundingClientRect();
-        const compClone = composer.cloneNode(true);
-        compClone.style.position = 'fixed';
-        compClone.style.margin = '0';
-        compClone.style.top = '0px';
-        compClone.style.left = '0px';
-        compClone.style.width = compRect.width + 'px';
-        compClone.style.height = compRect.height + 'px';
-        compClone.style.zIndex = '9998';
-        compClone.style.backgroundColor = '#f8fafc';
-        compClone.style.border = '2px solid var(--border-color)';
-        compClone.style.transform = `translate(${compRect.left}px, ${compRect.top}px)`;
-        compClone.style.willChange = 'transform';
-        document.body.appendChild(compClone);
-        
-        const compBody = Bodies.rectangle(
-            compRect.left + compRect.width/2,
-            compRect.top + compRect.height/2,
-            compRect.width,
-            compRect.height,
-            { restitution: 0.9, friction: 0, frictionAir: 0, density: 0.01 }
-        );
-        Composite.add(world, compBody);
-        domBodies.push({ el: compClone, body: compBody, w: compRect.width, h: compRect.height, orig: composer });
-        composer.style.visibility = 'hidden';
-
-        Matter.Events.on(engine, 'beforeUpdate', () => {
-            domBodies.forEach(obj => {
-                if (Math.random() < 0.12) {
-                    const forceDir = Vector.create((Math.random() - 0.5), (Math.random() - 0.5));
-                    const forceMag = Math.random() * 0.008; // random strong bursts to fight and slam
-                    Body.applyForce(obj.body, obj.body.position, Vector.mult(forceDir, forceMag));
-                }
-            });
-        });
-
-        const runner = Runner.create();
-        Runner.run(runner, engine);
-
-        function update() {
-            if (!window.madnessRunning) return;
-            domBodies.forEach(obj => {
-                const tx = obj.body.position.x - obj.w/2;
-                const ty = obj.body.position.y - obj.h/2;
-                obj.el.style.transform = `translate(${tx}px, ${ty}px) rotate(${obj.body.angle}rad)`;
-            });
-            requestAnimationFrame(update);
-        }
-        update();
-
-        // Anti-gravity pulse from mouse
-        const mouseMoveHandler = (e) => {
-            if (!window.madnessRunning) return;
-            const mousePos = Vector.create(e.clientX, e.clientY);
-            domBodies.forEach(obj => {
-                const diff = Vector.sub(obj.body.position, mousePos);
-                const distance = Vector.magnitude(diff);
-                if (distance < 250) { // pulse radius
-                    const forceDir = Vector.normalise(diff);
-                    const forceMag = (250 - distance) * 0.0002; // pulse strength
-                    Body.applyForce(obj.body, obj.body.position, Vector.mult(forceDir, forceMag));
-                }
-            });
-        };
-        document.addEventListener('mousemove', mouseMoveHandler);
-
-        // 5-click RESTORE madness
-        let restoreClickCount = 0;
-        compClone.addEventListener('click', (e) => {
-            if(e.target.closest('button') || e.target.closest('textarea') || e.target.closest('input') || e.target.tagName === 'A' || e.target.tagName === 'I') return;
-            restoreClickCount++;
-            if(restoreClickCount >= 5) {
-                // Shut down engine
-                window.madnessRunning = false;
-                Runner.stop(runner);
-                Engine.clear(engine);
-                document.removeEventListener('mousemove', mouseMoveHandler);
-
-                // Swift elegant transition back to static flow
-                document.body.style.overflow = '';
-                
-                posts.forEach(post => { post.style.visibility = 'visible'; post.style.opacity = '0'; post.style.transition = 'opacity 0.2s'; });
-                composer.style.visibility = 'visible';
-                composer.style.opacity = '0';
-                composer.style.transition = 'opacity 0.2s';
-                
-                domBodies.forEach(obj => {
-                    const rect = obj.orig.getBoundingClientRect();
-                    obj.el.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s 0.4s';
-                    obj.el.style.transform = `translate(${rect.left}px, ${rect.top}px) rotate(0deg)`;
-                    obj.el.style.opacity = '0';
-                });
-
-                // Crossfade
-                setTimeout(() => {
-                    posts.forEach(post => post.style.opacity = '1');
-                    composer.style.opacity = '1';
-                }, 400);
-
-                // Once transition completes, clean up clones and restore original visibility
-                setTimeout(() => {
-                    domBodies.forEach(obj => obj.el.remove());
-                    posts.forEach(post => { post.style.transition = ''; });
-                    composer.style.transition = '';
-                    clickCount = 0; 
-                }, 600);
+        composer.addEventListener('click', (e) => {
+            if (e.target.closest('button') || e.target.closest('textarea') || e.target.closest('input') || e.target.tagName === 'A' || e.target.tagName === 'I') return;
+            clickCount++;
+            if (clickCount >= 5) {
+                initGravityMadness();
             }
         });
-    }
-});
+
+        function initGravityMadness() {
+            if (window.madnessRunning) return;
+            window.madnessRunning = true;
+
+            const { Engine, Runner, Bodies, Composite, Body, Vector } = Matter;
+            const engine = Engine.create();
+            const world = engine.world;
+            engine.world.gravity.y = 0;
+            engine.world.gravity.x = 0;
+
+            document.body.style.overflow = 'hidden';
+
+            const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 250, window.innerWidth * 2, 500, { isStatic: true });
+            const limitTop = Bodies.rectangle(window.innerWidth / 2, -250, window.innerWidth * 2, 500, { isStatic: true });
+            const wallL = Bodies.rectangle(-250, window.innerHeight / 2, 500, window.innerHeight * 2, { isStatic: true });
+            const wallR = Bodies.rectangle(window.innerWidth + 250, window.innerHeight / 2, 500, window.innerHeight * 2, { isStatic: true });
+            Composite.add(world, [ground, limitTop, wallL, wallR]);
+
+            const domBodies = [];
+
+            // Detach components
+            const posts = document.querySelectorAll('.post-card');
+            posts.forEach(post => {
+                const parts = post.querySelectorAll('.post-avatar, .post-header, .post-text, .post-media img, .action-item');
+                parts.forEach(part => {
+                    const rect = part.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) return;
+
+                    const clone = part.cloneNode(true);
+                    clone.style.position = 'fixed';
+                    clone.style.margin = '0';
+                    clone.style.top = '0px';
+                    clone.style.left = '0px';
+                    clone.style.width = rect.width + 'px';
+                    clone.style.height = rect.height + 'px';
+                    clone.style.zIndex = '9999';
+                    clone.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+                    clone.style.willChange = 'transform';
+                    clone.style.color = window.getComputedStyle(part).color;
+
+                    if (part.classList.contains('post-text') || part.classList.contains('post-header')) {
+                        clone.style.backgroundColor = '#fff';
+                        clone.style.boxShadow = '2px 2px 0px 0px var(--navy)';
+                        clone.style.border = '2px solid var(--border-color)';
+                    }
+
+                    document.body.appendChild(clone);
+
+                    const body = Bodies.rectangle(
+                        rect.left + rect.width / 2,
+                        rect.top + rect.height / 2,
+                        rect.width,
+                        rect.height,
+                        { restitution: 0.9, friction: 0, frictionAir: 0, density: 0.01 }
+                    );
+
+                    Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.1);
+                    Composite.add(world, body);
+                    domBodies.push({ el: clone, body: body, w: rect.width, h: rect.height, orig: part });
+                });
+                post.style.visibility = 'hidden';
+            });
+
+            // Add composer box to physics
+            const compRect = composer.getBoundingClientRect();
+            const compClone = composer.cloneNode(true);
+            compClone.style.position = 'fixed';
+            compClone.style.margin = '0';
+            compClone.style.top = '0px';
+            compClone.style.left = '0px';
+            compClone.style.width = compRect.width + 'px';
+            compClone.style.height = compRect.height + 'px';
+            compClone.style.zIndex = '9998';
+            compClone.style.backgroundColor = '#f8fafc';
+            compClone.style.border = '2px solid var(--border-color)';
+            compClone.style.transform = `translate(${compRect.left}px, ${compRect.top}px)`;
+            compClone.style.willChange = 'transform';
+            document.body.appendChild(compClone);
+
+            const compBody = Bodies.rectangle(
+                compRect.left + compRect.width / 2,
+                compRect.top + compRect.height / 2,
+                compRect.width,
+                compRect.height,
+                { restitution: 0.9, friction: 0, frictionAir: 0, density: 0.01 }
+            );
+            Composite.add(world, compBody);
+            domBodies.push({ el: compClone, body: compBody, w: compRect.width, h: compRect.height, orig: composer });
+            composer.style.visibility = 'hidden';
+
+            Matter.Events.on(engine, 'beforeUpdate', () => {
+                domBodies.forEach(obj => {
+                    if (Math.random() < 0.12) {
+                        const forceDir = Vector.create((Math.random() - 0.5), (Math.random() - 0.5));
+                        const forceMag = Math.random() * 0.008; // random strong bursts to fight and slam
+                        Body.applyForce(obj.body, obj.body.position, Vector.mult(forceDir, forceMag));
+                    }
+                });
+            });
+
+            const runner = Runner.create();
+            Runner.run(runner, engine);
+
+            function update() {
+                if (!window.madnessRunning) return;
+                domBodies.forEach(obj => {
+                    const tx = obj.body.position.x - obj.w / 2;
+                    const ty = obj.body.position.y - obj.h / 2;
+                    obj.el.style.transform = `translate(${tx}px, ${ty}px) rotate(${obj.body.angle}rad)`;
+                });
+                requestAnimationFrame(update);
+            }
+            update();
+
+            // Anti-gravity pulse from mouse
+            const mouseMoveHandler = (e) => {
+                if (!window.madnessRunning) return;
+                const mousePos = Vector.create(e.clientX, e.clientY);
+                domBodies.forEach(obj => {
+                    const diff = Vector.sub(obj.body.position, mousePos);
+                    const distance = Vector.magnitude(diff);
+                    if (distance < 250) { // pulse radius
+                        const forceDir = Vector.normalise(diff);
+                        const forceMag = (250 - distance) * 0.0002; // pulse strength
+                        Body.applyForce(obj.body, obj.body.position, Vector.mult(forceDir, forceMag));
+                    }
+                });
+            };
+            document.addEventListener('mousemove', mouseMoveHandler);
+
+            // 5-click RESTORE madness
+            let restoreClickCount = 0;
+            compClone.addEventListener('click', (e) => {
+                if (e.target.closest('button') || e.target.closest('textarea') || e.target.closest('input') || e.target.tagName === 'A' || e.target.tagName === 'I') return;
+                restoreClickCount++;
+                if (restoreClickCount >= 5) {
+                    // Shut down engine
+                    window.madnessRunning = false;
+                    Runner.stop(runner);
+                    Engine.clear(engine);
+                    document.removeEventListener('mousemove', mouseMoveHandler);
+
+                    // Swift elegant transition back to static flow
+                    document.body.style.overflow = '';
+
+                    posts.forEach(post => { post.style.visibility = 'visible'; post.style.opacity = '0'; post.style.transition = 'opacity 0.2s'; });
+                    composer.style.visibility = 'visible';
+                    composer.style.opacity = '0';
+                    composer.style.transition = 'opacity 0.2s';
+
+                    domBodies.forEach(obj => {
+                        const rect = obj.orig.getBoundingClientRect();
+                        obj.el.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s 0.4s';
+                        obj.el.style.transform = `translate(${rect.left}px, ${rect.top}px) rotate(0deg)`;
+                        obj.el.style.opacity = '0';
+                    });
+
+                    // Crossfade
+                    setTimeout(() => {
+                        posts.forEach(post => post.style.opacity = '1');
+                        composer.style.opacity = '1';
+                    }, 400);
+
+                    // Once transition completes, clean up clones and restore original visibility
+                    setTimeout(() => {
+                        domBodies.forEach(obj => obj.el.remove());
+                        posts.forEach(post => { post.style.transition = ''; });
+                        composer.style.transition = '';
+                        clickCount = 0;
+                    }, 600);
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

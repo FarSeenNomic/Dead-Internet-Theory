@@ -7,15 +7,15 @@
 <article class="post-detail">
     <div class="post-detail-header">
         <div class="post-avatar">
-            <a href="/@{{ post.owner|to_username }}">
-                <img src="https://ui-avatars.com/api/?name={{ post.owner|to_username }}&background=1e293b&color=fff&size=120&bold=true" alt="Avatar">
+            <a href="/@{{ post.owner_displayname }}">
+                <img src="{{ post.owner_pfp }}" alt="Avatar">
             </a>
         </div>
         <div>
-            <a href="/@{{ post.owner|to_username }}" class="post-name-link">
-                <span class="post-name">{{ post.owner|to_username|upper }}</span>
+            <a href="/@{{ post.owner_username }}" class="post-name-link">
+                <span class="post-name">{{ post.owner_displayname }}</span>
             </a>
-            <div class="post-handle">@{{ post.owner|to_username|lower }}</div>
+            <div class="post-handle">@{{ post.owner_username }}</div>
         </div>
     </div>
 
@@ -30,7 +30,8 @@
     <div class="post-detail-meta">
         <span class="post-time">Post #{{ post.snowflake }}</span>
         {% if post.reply_to %}
-        <span class="post-replying-to">Replying to <a href="/@{{ post.owner|to_username }}/{{ post.reply_to }}">#{{ post.reply_to }}</a></span>
+        <span class="post-replying-to">Replying to <a href="/@{{ post.owner_username }}/{{ post.reply_to }}">#{{
+                post.reply_to }}</a></span>
         {% endif %}
     </div>
 
@@ -59,20 +60,23 @@
 <div class="reply-composer">
     <div class="composer-wrapper">
         <div class="composer-avatar">
-            <img src="https://ui-avatars.com/api/?name={{ username }}&background=1e293b&color=fff&size=120&bold=true" alt="Avatar">
+            <img src="{{ userPFP }}" alt="Avatar">
         </div>
         <div class="composer-body">
             <form action="/reply/{{ post.snowflake }}" method="POST" novalidate>
                 <textarea name="text" class="composer-input" placeholder="Post your reply..." rows="2"></textarea>
                 <div class="composer-actions">
                     <div class="composer-tools">
-                        <button type="button" class="tool-btn" onclick="const el=document.getElementById('reply-img');el.style.display=el.style.display==='none'?'block':'none';">
+                        <button type="button" class="tool-btn"
+                            onclick="const el=document.getElementById('reply-img');el.style.display=el.style.display==='none'?'block':'none';">
                             <i data-lucide="image"></i>
                         </button>
                     </div>
                     <button type="submit" class="btn btn-primary">REPLY</button>
                 </div>
-                <input type="url" name="image" id="reply-img" class="composer-input" placeholder="Paste image URL here..." style="display:none;min-height:40px;margin-top:.75rem;font-size:.95rem;padding:.5rem 1rem;">
+                <input type="url" name="image" id="reply-img" class="composer-input"
+                    placeholder="Paste image URL here..."
+                    style="display:none;min-height:40px;margin-top:.75rem;font-size:.95rem;padding:.5rem 1rem;">
             </form>
         </div>
     </div>
@@ -84,16 +88,16 @@
     {% for reply in replies %}
     <article class="post-card">
         <div class="post-avatar">
-            <a href="/@{{ reply.owner|to_username }}">
-                <img src="https://ui-avatars.com/api/?name={{ reply.owner|to_username }}&background=random&size=120&bold=true" alt="Avatar">
+            <a href="/@{{ reply.owner_username }}">
+                <img src="{{ reply.owner_pfp }}" alt="Avatar">
             </a>
         </div>
         <div class="post-content">
             <div class="post-header">
-                <a href="/@{{ reply.owner|to_username }}" class="post-name-link">
-                    <span class="post-name">{{ reply.owner|to_username|upper }}</span>
+                <a href="/@{{ reply.owner_username }}" class="post-name-link">
+                    <span class="post-name">{{ reply.owner_displayname }}</span>
                 </a>
-                <span class="post-handle">@{{ reply.owner|to_username|lower }}</span>
+                <span class="post-handle">@{{ reply.owner_username }}</span>
             </div>
             <div class="post-text">{{ reply.text }}</div>
             {% if reply.image and reply.image != 'None' and reply.image != '' %}
@@ -102,11 +106,13 @@
             </div>
             {% endif %}
             <div class="post-actions">
-                <div class="action-item like-toggle-{{ reply.snowflake }} {% if check_liked(reply.snowflake) %}active-orange{% endif %}">
+                <div
+                    class="action-item like-toggle-{{ reply.snowflake }} {% if check_liked(reply.snowflake) %}active-orange{% endif %}">
                     <button type="button" class="action-btn" onclick="toggleLikeReply({{ reply.snowflake }})">
                         <i class="icon" data-lucide="triangle"></i>
                     </button>
-                    <span class="action-count" id="reply-likes-{{ reply.snowflake }}">{{ get_likes(reply.snowflake) }}</span>
+                    <span class="action-count" id="reply-likes-{{ reply.snowflake }}">{{ get_likes(reply.snowflake)
+                        }}</span>
                 </div>
             </div>
         </div>
@@ -119,33 +125,33 @@
 </div>
 
 <script>
-async function toggleLike(postId) {
-    const action = document.getElementById('like-action');
-    const isLiked = action.classList.contains('active-orange');
-    const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
-    try {
-        const res = await fetch(url);
-        const ok = await res.json();
-        if (ok) {
-            action.classList.toggle('active-orange');
-            const c = document.getElementById('like-count');
-            c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
-        }
-    } catch(e) { console.error(e); }
-}
-async function toggleLikeReply(postId) {
-    const item = document.querySelector(`.like-toggle-${postId}`);
-    const isLiked = item.classList.contains('active-orange');
-    const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
-    try {
-        const res = await fetch(url);
-        const ok = await res.json();
-        if (ok) {
-            item.classList.toggle('active-orange');
-            const c = document.getElementById(`reply-likes-${postId}`);
-            c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
-        }
-    } catch(e) { console.error(e); }
-}
+    async function toggleLike(postId) {
+        const action = document.getElementById('like-action');
+        const isLiked = action.classList.contains('active-orange');
+        const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+        try {
+            const res = await fetch(url);
+            const ok = await res.json();
+            if (ok) {
+                action.classList.toggle('active-orange');
+                const c = document.getElementById('like-count');
+                c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+            }
+        } catch (e) { console.error(e); }
+    }
+    async function toggleLikeReply(postId) {
+        const item = document.querySelector(`.like-toggle-${postId}`);
+        const isLiked = item.classList.contains('active-orange');
+        const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+        try {
+            const res = await fetch(url);
+            const ok = await res.json();
+            if (ok) {
+                item.classList.toggle('active-orange');
+                const c = document.getElementById(`reply-likes-${postId}`);
+                c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+            }
+        } catch (e) { console.error(e); }
+    }
 </script>
 {% endblock %}
