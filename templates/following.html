@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %} DIT - @{{ username }} Following {% endblock %}
+
+{% block content %}
+<div style="padding:1.5rem;">
+    <h2 style="font-weight:800;margin-bottom:0.5rem;">FOLLOWING</h2>
+    <p style="color:var(--text-secondary);margin-bottom:1.5rem;">People <strong>@{{ username }}</strong> follows</p>
+</div>
+
+<div class="feed-section">
+    {% for u in following %}
+    <a href="/@{{ u.username }}" class="user-list-item">
+        <div class="post-avatar">
+            {% if u.PFP and u.PFP != '/noPFP.jpg' and u.PFP != '' %}
+            <img src="{{ u.PFP }}" alt="{{ u.username }}" onerror="this.src='https://ui-avatars.com/api/?name={{ u.username }}&background=random&size=120&bold=true'">
+            {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ u.username }}&background=random&size=120&bold=true" alt="{{ u.username }}">
+            {% endif %}
+        </div>
+        <div class="user-list-info">
+            <span class="post-name">{{ (u.displayname or u.username)|upper }}</span>
+            <span class="post-handle">@{{ u.username }}</span>
+            {% if u.bio %}<p class="user-list-bio">{{ u.bio }}</p>{% endif %}
+        </div>
+    </a>
+    {% else %}
+    <div class="empty-state">
+        <p>Not following anyone yet.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

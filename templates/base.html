@@ -34,11 +34,11 @@
                     <i data-lucide="bell"></i>
                     <span>NOTIFICATIONS</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="{% if 'username' in session %}/@{{ session.username }}{% else %}#{% endif %}" class="nav-item {% if '/@' in request.path and '/followers' not in request.path and '/following' not in request.path %}active{% endif %}">
                     <i data-lucide="user"></i>
                     <span>PROFILE</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="/settings" class="nav-item {% if '/settings' in request.path %}active{% endif %}">
                     <i data-lucide="settings"></i>
                     <span>SETTINGS</span>
                 </a>

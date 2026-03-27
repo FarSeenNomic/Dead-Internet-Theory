@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %} DIT - @{{ user.username }} {% endblock %}
+
+{% block content %}
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="profile-banner"></div>
+    <div class="profile-info">
+        <div class="profile-avatar-large">
+            {% if user.PFP and user.PFP != '/noPFP.jpg' and user.PFP != '' %}
+            <img src="{{ user.PFP }}" alt="{{ user.username }}" onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1e293b&color=fff&size=200&bold=true'">
+            {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=1e293b&color=fff&size=200&bold=true" alt="{{ user.username }}">
+            {% endif %}
+        </div>
+
+        <div class="profile-actions-row">
+            {% if session.username and session.username != user.username %}
+            <button class="btn btn-primary follow-btn" id="follow-btn" onclick="toggleFollow({{ user.snowflake }})">
+                <span id="follow-text">{{ 'FOLLOWING' if is_following else 'FOLLOW' }}</span>
+            </button>
+            {% elif session.username == user.username %}
+            <a href="/settings" class="btn btn-secondary">EDIT PROFILE</a>
+            {% endif %}
+        </div>
+
+        <div class="profile-names">
+            <span class="profile-displayname">{{ user.displayname or user.username|upper }}</span>
+            <span class="profile-username">@{{ user.username }}</span>
+        </div>
+
+        {% if user.bio %}
+        <div class="profile-bio">{{ user.bio }}</div>
+        {% endif %}
+
+        <div class="profile-stats">
+            <a href="/@{{ user.username }}/following" class="stat-item">
+                <span class="stat-count">{{ following_count }}</span>
+                <span class="stat-label">Following</span>
+            </a>
+            <a href="/@{{ user.username }}/followers" class="stat-item">
+                <span class="stat-count" id="follower-count">{{ follower_count }}</span>
+                <span class="stat-label">Followers</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- User's Posts -->
+<div class="feed-section">
+    {% for p in posts %}
+    <article class="post-card">
+        <div class="post-avatar">
+            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=random&size=120&bold=true" alt="Avatar">
+        </div>
+        <div class="post-content">
+            <div class="post-header">
+                <span class="post-name">{{ user.username|upper }}</span>
+                <span class="post-handle">@{{ user.username|lower }}</span>
+                <span class="post-dot">&middot;</span>
+                <a href="/@{{ user.username }}/{{ p.snowflake }}" class="post-time">View</a>
+            </div>
+            <a href="/@{{ user.username }}/{{ p.snowflake }}" style="text-decoration:none;color:inherit;">
+                <div class="post-text">{{ p.text }}</div>
+            </a>
+            {% if p.image and p.image != 'None' and p.image != '' %}
+            <div class="post-media">
+                <img src="{{ p.image }}" alt="Post attachment" onerror="this.style.display='none'">
+            </div>
+            {% endif %}
+            <div class="post-actions">
+                <div class="action-item">
+                    <a href="/@{{ user.username }}/{{ p.snowflake }}" class="action-btn" style="color:inherit;">
+                        <i class="icon" data-lucide="message-square"></i>
+                    </a>
+                </div>
+                <div class="action-item like-toggle-{{ p.snowflake }} {% if check_liked(p.snowflake) %}active-orange{% endif %}">
+                    <button type="button" class="action-btn" onclick="toggleLike({{ p.snowflake }})">
+                        <i class="icon" data-lucide="triangle"></i>
+                    </button>
+                    <span class="action-count" id="likes-{{ p.snowflake }}">{{ get_likes(p.snowflake) }}</span>
+                </div>
+                <div class="action-item">
+                    <button type="button" class="action-btn"><i class="icon" data-lucide="share-2"></i></button>
+                </div>
+            </div>
+        </div>
+    </article>
+    {% else %}
+    <div class="empty-state">
+        <p>No posts yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+async function toggleFollow(userId) {
+    const btn = document.getElementById('follow-btn');
+    const txt = document.getElementById('follow-text');
+    const isFollowing = txt.textContent === 'FOLLOWING';
+    const url = isFollowing ? `/unfollow.json/${userId}` : `/follow.json/${userId}`;
+    try {
+        const res = await fetch(url);
+        const ok = await res.json();
+        if (ok) {
+            txt.textContent = isFollowing ? 'FOLLOW' : 'FOLLOWING';
+            btn.classList.toggle('btn-primary');
+            btn.classList.toggle('btn-secondary');
+            const fc = document.getElementById('follower-count');
+            fc.textContent = parseInt(fc.textContent) + (isFollowing ? -1 : 1);
+        }
+    } catch(e) { console.error(e); }
+}
+async function toggleLike(postId) {
+    const item = document.querySelector(`.like-toggle-${postId}`);
+    const isLiked = item.classList.contains('active-orange');
+    const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+    try {
+        const res = await fetch(url);
+        const ok = await res.json();
+        if (ok) {
+            item.classList.toggle('active-orange');
+            const c = document.getElementById(`likes-${postId}`);
+            c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+        }
+    } catch(e) { console.error(e); }
+}
+</script>
+{% endblock %}

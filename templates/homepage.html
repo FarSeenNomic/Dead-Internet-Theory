@@ -25,7 +25,7 @@
                     <div class="composer-tools">
                         <button type="button" class="tool-btn" onclick="const el = document.getElementById('image-url-input'); el.style.display = el.style.display === 'none' ? 'block' : 'none';"><i data-lucide="image"></i></button>
                     </div>
-                    <button type="submit" class="btn btn-primary">SEND'DIT</button>
+                    <button type="button" id="senddit-btn" class="btn btn-primary">SEND'DIT</button>
                 </div>
                 <input type="url" name="image" id="image-url-input" class="composer-input" placeholder="Paste image URL here..." style="display: none; min-height: 40px; margin-top: 0.75rem; font-size: 0.95rem; padding: 0.5rem 1rem;">
             </form>
@@ -37,22 +37,26 @@
     {% for post in posts %}
     <article class="post-card">
         <div class="post-avatar">
-            <img src="https://ui-avatars.com/api/?name={{ post.owner }}&background=random&size=120&bold=true" alt="Avatar">
+            <a href="/@{{ post.owner|to_username }}">
+                <img src="https://ui-avatars.com/api/?name={{ post.owner|to_username }}&background=random&size=120&bold=true" alt="Avatar">
+            </a>
         </div>
         <div class="post-content">
             <div class="post-header">
-                <span class="post-name">{{ post.owner|upper }}</span>
-                <span class="post-handle">@{{ post.owner|lower }}</span>
+                <a href="/@{{ post.owner|to_username }}" class="post-name-link">
+                    <span class="post-name">{{ post.owner|to_username|upper }}</span>
+                </a>
+                <span class="post-handle">@{{ post.owner|to_username|lower }}</span>
                 <span class="post-dot">&middot;</span>
-                <span class="post-time">2h</span>
+                <a href="/@{{ post.owner|to_username }}/{{ post.snowflake }}" class="post-time">View</a>
                 {% if post.reply_to %}
                 <span class="post-replying-to" style="margin-left:auto;">Replying to #{{ post.reply_to }}</span>
                 {% endif %}
             </div>
             
-            <div class="post-text">
-                {{ post.text }}
-            </div>
+            <a href="/@{{ post.owner|to_username }}/{{ post.snowflake }}" style="text-decoration:none;color:inherit;">
+                <div class="post-text">{{ post.text }}</div>
+            </a>
             
             {% if post.image and post.image != 'None' and post.image != '' %}
             <div class="post-media">
@@ -62,16 +66,16 @@
             
             <div class="post-actions">
                 <div class="action-item">
-                    <button type="button" class="action-btn"><i class="icon" data-lucide="message-square"></i></button>
-                    <span class="action-count">12</span>
+                    <a href="/@{{ post.owner|to_username }}/{{ post.snowflake }}" class="action-btn" style="color:inherit;"><i class="icon" data-lucide="message-square"></i></a>
+                    <span class="action-count">{{ get_replies(post.snowflake) }}</span>
                 </div>
                 <div class="action-item">
                     <button type="button" class="action-btn"><i class="icon" data-lucide="repeat"></i></button>
-                    <span class="action-count">48</span>
+                    <span class="action-count">0</span>
                 </div>
-                <div class="action-item active-blue">
-                    <button type="button" class="action-btn"><i class="icon" data-lucide="triangle" fill="currentColor"></i></button>
-                    <span class="action-count">1.2k</span>
+                <div class="action-item like-toggle-{{ post.snowflake }} {% if check_liked(post.snowflake) %}active-orange{% endif %}">
+                    <button type="button" class="action-btn" onclick="toggleLike({{ post.snowflake }})"><i class="icon" data-lucide="triangle"></i></button>
+                    <span class="action-count" id="likes-{{ post.snowflake }}">{{ get_likes(post.snowflake) }}</span>
                 </div>
                 <div class="action-item">
                     <button type="button" class="action-btn"><i class="icon" data-lucide="share-2"></i></button>
@@ -86,26 +90,173 @@
     {% endfor %}
 </div>
 
-<!-- Front-end Form Validation -->
+<!-- AJAX Post Submission + Flashy Animation (no page reload) -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('compose-form');
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            const text = document.getElementById('composer-text').value.trim();
+    const btn = document.getElementById('senddit-btn');
+    if (btn) {
+        btn.addEventListener('click', async () => {
+            const textEl = document.getElementById('composer-text');
+            const text = textEl.value.trim();
             if (!text) {
-                e.preventDefault();
                 const tooltip = document.getElementById('custom-tooltip');
                 tooltip.style.display = 'block';
                 tooltip.style.animation = 'none';
-                void tooltip.offsetWidth; // trigger reflow
+                void tooltip.offsetWidth;
                 tooltip.style.animation = 'bounceShake 0.4s cubic-bezier(.36,.07,.19,.97) both';
                 setTimeout(() => tooltip.style.display = 'none', 3000);
+                return;
             }
+
+            // Grab image URL if any
+            const imageEl = document.getElementById('image-url-input');
+            const image = imageEl ? imageEl.value.trim() : '';
+
+            // Submit via AJAX — no page reload
+            const formData = new FormData(document.getElementById('compose-form'));
+            try {
+                await fetch('/create', { method: 'POST', body: formData });
+            } catch (err) {
+                console.error('Post failed:', err);
+                return;
+            }
+
+            // Clear inputs
+            textEl.value = '';
+            if (imageEl) { imageEl.value = ''; imageEl.style.display = 'none'; }
+
+            // Build the new post card in the DOM
+            const username = '{{ username }}';
+            const newCard = document.createElement('article');
+            newCard.className = 'post-card';
+            newCard.innerHTML = `
+                <div class="post-avatar">
+                    <a href="/@${username}">
+                        <img src="https://ui-avatars.com/api/?name=${username}&background=random&size=120&bold=true" alt="Avatar">
+                    </a>
+                </div>
+                <div class="post-content">
+                    <div class="post-header">
+                        <a href="/@${username}" class="post-name-link">
+                            <span class="post-name">${username.toUpperCase()}</span>
+                        </a>
+                        <span class="post-handle">@${username.toLowerCase()}</span>
+                        <span class="post-dot">&middot;</span>
+                        <span class="post-time">now</span>
+                    </div>
+                    <div class="post-text">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                    ${image ? '<div class="post-media"><img src="'+image+'" alt="Post attachment" onerror="this.style.display=\'none\'"></div>' : ''}
+                    <div class="post-actions">
+                        <div class="action-item">
+                            <span class="action-btn" style="color:inherit;"><i data-lucide="message-square"></i></span>
+                            <span class="action-count">0</span>
+                        </div>
+                        <div class="action-item">
+                            <button type="button" class="action-btn"><i data-lucide="repeat"></i></button>
+                            <span class="action-count">0</span>
+                        </div>
+                        <div class="action-item">
+                            <button type="button" class="action-btn"><i data-lucide="triangle"></i></button>
+                            <span class="action-count">0</span>
+                        </div>
+                        <div class="action-item">
+                            <button type="button" class="action-btn"><i data-lucide="share-2"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove "No posts yet" empty state if present
+            const emptyState = document.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            // Insert at top of feed
+            const feed = document.querySelector('.feed-section');
+            feed.insertBefore(newCard, feed.firstChild);
+
+            // Render the Lucide icons inside the new card
+            if (window.lucide) lucide.createIcons();
+
+            // ── FLASHY 3-STAGE ANIMATION ──
+
+            const finalAngle = (Math.random() * 3 - 1.5).toFixed(2);
+
+            // STAGE 1: Start state — off below, small, hard rotation, invisible
+            newCard.style.transition = 'none';
+            newCard.style.transform = 'translateY(80px) scale(0.4) rotate(' + (Math.random() > 0.5 ? 15 : -15) + 'deg)';
+            newCard.style.opacity = '0';
+            newCard.style.transformOrigin = 'center center';
+            newCard.style.boxShadow = '0 0 0px 0px rgba(249, 115, 22, 0)';
+            void newCard.offsetWidth;
+
+            // STAGE 2: Slam in with orange glow burst
+            newCard.style.transition = 'transform 1s cubic-bezier(0.22, 1.2, 0.36, 1), opacity 0.4s ease-out, box-shadow 0.6s ease-out';
+            newCard.style.transform = 'translateY(0) scale(1.03) rotate(' + finalAngle + 'deg)';
+            newCard.style.opacity = '1';
+            newCard.style.boxShadow = '0 0 30px 8px rgba(249, 115, 22, 0.45), 6px 6px 0px 0px var(--navy)';
+
+            // STAGE 3: Settle — scale correction + glow fade
+            setTimeout(() => {
+                newCard.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1.2s ease-out';
+                newCard.style.transform = 'scale(1) rotate(' + finalAngle + 'deg)';
+                newCard.style.boxShadow = '';
+            }, 500);
+
+            // Composer: dramatic tilt + settle
+            const composer = document.querySelector('.composer-section');
+            if (composer) {
+                const tilt = (Math.random() > 0.5 ? 8 : -8).toFixed(1);
+                const settle = (Math.random() * 6 - 3).toFixed(2);
+                composer.style.transition = 'transform 0.6s cubic-bezier(0.22, 1.2, 0.36, 1), box-shadow 0.5s ease';
+                composer.style.transform = 'rotate(' + tilt + 'deg) scale(0.98)';
+                composer.style.boxShadow = '0 0 20px 4px rgba(249, 115, 22, 0.25), 6px 6px 0px 0px var(--navy)';
+                setTimeout(() => {
+                    composer.style.transition = 'transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 1s ease';
+                    composer.style.transform = 'rotate(' + settle + 'deg) scale(1)';
+                    composer.style.boxShadow = '6px 6px 0px 0px var(--navy)';
+                }, 400);
+            }
+
+            // Other cards: staggered cascade shuffle
+            const allCards = document.querySelectorAll('.post-card');
+            allCards.forEach((card, i) => {
+                if (i === 0) return;
+                const angle = (Math.random() * 2.5 - 1.25).toFixed(2);
+                setTimeout(() => {
+                    card.style.transition = 'transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    card.style.transform = 'rotate(' + angle + 'deg)';
+                }, 200 + (i * 80));
+            });
+
+            // Persist angles
+            setTimeout(() => {
+                const boxes = document.querySelectorAll('.post-card, .auth-container, .composer-section');
+                const angles = [];
+                boxes.forEach(b => {
+                    const m = (b.style.transform || '').match(/rotate\(([^)]+)deg\)/);
+                    angles.push(m ? m[1] : '0');
+                });
+                sessionStorage.setItem('boxAngles_' + window.location.pathname, JSON.stringify(angles));
+            }, 2000);
         });
     }
 });
+async function toggleLike(postId) {
+    const item = document.querySelector(`.like-toggle-${postId}`);
+    const isLiked = item.classList.contains('active-orange');
+    const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+    try {
+        const res = await fetch(url);
+        const ok = await res.json();
+        if (ok) {
+            item.classList.toggle('active-orange');
+            const c = document.getElementById(`likes-${postId}`);
+            c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+        }
+    } catch(e) { console.error(e); }
+}
 </script>
+
 
 <!-- Easter Egg Gravity Physics -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
