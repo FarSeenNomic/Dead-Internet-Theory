@@ -393,30 +393,33 @@ def reboot_pagehandle():
 
 # === API ===
 
+@wib.route('/posts.json/')
+def posts_apihandle():
+  return [p.__dict__ for p in get_posts()]
+
+@wib.route('/post.json/<int:post_id>')
+def post_apihandle(post_id):
+  #qu = cnx.cursor()
+  #qu.execute("SELECT snowflake, owner_snowflake, text, reply_to, image FROM posts WHERE snowflake=%s".replace("%s", replchar), (post_id) )
+  #for snowflake, owner_snowflake, text, reply_to, image in qu:
+  #  return {"snowflake": snowflake, "owner_snowflake": owner_snowflake, "text": text, "reply_to": reply_to, "image": image}
+  #return {}
+
+  qu = cnx.cursor()
+  qu.execute("SELECT * FROM posts WHERE snowflake=%s ORDER BY snowflake DESC LIMIT 255".replace("%s", replchar), (post_id,))
+  postc = []
+  for data in qu:
+    postc.append(post(*data))
+  return [p.__dict__ for p in postc]
+
+@wib.route('/replies.json/<int:post_id>')
+def replies_apihandle(post_id):
+  return [p.__dict__ for p in get_posts(post_id)]
+
 @wib.route('/user.json/@<username>')
 def user_apihandle(username):
-  qu = cnx.cursor()
-  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
-                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
-                WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
-  posts = []
-  for snowflake, owner_snowflake, text, reply_to, image in qu:
-    posts.append({
-      "snowflake": snowflake,
-      "owner_snowflake": owner_snowflake,
-      "text": text,
-      "reply_to": reply_to,
-      "image": image
-    })
-  return flask.jsonify(posts)
+  return [p.__dict__ for p in get_posts_by_username(username)]
 
-@wib.route('/post.json/<int:post_id>', methods=['POST'])
-def post_apihandle(post_id):
-  qu = cnx.cursor()
-  qu.execute("SELECT snowflake, owner_snowflake, text, reply_to, image FROM posts WHERE snowflake=%s".replace("%s", replchar), (post_id) )
-  for snowflake, owner_snowflake, text, reply_to, image in qu:
-    return {"snowflake": snowflake, "owner_snowflake": owner_snowflake, "text": text, "reply_to": reply_to, "image": image}
-  return {}
 
 @wib.route('/like.json/<int:post_id>', methods=['POST'])
 def like_apihandle(post_id):

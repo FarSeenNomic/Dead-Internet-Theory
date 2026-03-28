@@ -63,7 +63,9 @@ user2.post("http://localhost:5000/settings/profile", data={
   "displayname": 'Captain B.J. Hunnicutt',
   })
 print(f"register, login, and update {user2_data['username']}")
+
 """
+
 try:
   response = user3.post("http://localhost:5000/register", data=user1_data)
   assert response.status_code == 409
@@ -94,8 +96,10 @@ try:
 except Exception as e:
   print("Error", e)
 
+print(response)
+
 post2like = response[0]["snowflake"]
-post2follow = response[0]["owner_snowflake"]
+post2follow = response[0]["owner"]
 
 try:
   response = user2.post(f"http://localhost:5000/like.json/{post2like}")
@@ -121,6 +125,41 @@ try:
   print(f"Reply {user3_data['username']}")
   assert response.status_code == 200
 except AssertionError as e:
+  print("Error", e)
+
+response = user3.post("http://localhost:5000/create", data={"text": "This nincompoop won't stop leaving these pictures on the job board.", "image": "https://64.media.tumblr.com/108628e7ab397985d6d4ea9aab7a43d1/c497e05a44d10137-8c/s1280x1920/2922a934ba2e6492d1b829a1626db05a38f88d52.jpg"})
+print(f"image {user1_data['username']}")
+
+try:
+  response = user3.get('http://localhost:5000/posts.json/')
+  assert response.status_code == 200
+  print(response.content)
+  post = response.json()[~0]
+
+  try:
+    response = user3.get(f"http://localhost:5000/post.json/{post['snowflake']}")
+    print(response.content)
+    print(response.json())
+    assert response.status_code == 200
+  except Exception as e:
+    print("Error", e)
+
+  try:
+    response = user3.get(f"http://localhost:5000/replies.json/{post['snowflake']}")
+    print(response.content)
+    print(response.json())
+    assert response.status_code == 200
+  except Exception as e:
+    print("Error", e)
+
+  try:
+    response = user3.get(f"http://localhost:5000/user.json/@{post['owner_username']}")
+    print(response.content)
+    print(response.json())
+    assert response.status_code == 200
+  except Exception as e:
+    print("Error", e)
+except Exception as e:
   print("Error", e)
 
 
