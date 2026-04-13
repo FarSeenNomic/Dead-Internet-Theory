@@ -262,23 +262,27 @@ def index_pagehandle():
 @wib.route('/@<username>')
 def specific_user_pagehandle(username):
   qu = cnx.cursor()
-  qu.execute("SELECT snowflake, username, displayname, PFP, bio FROM users WHERE username=%s".replace("%s", replchar), (username,))
+  qu.execute('SELECT snowflake, username, displayname, PFP, bio FROM users WHERE username=%s'.replace('%s', replchar), (username,))
   user_info = None
   for row in qu:
-    user_info = {
-      "snowflake": row[0],
-      "username": row[1],
-      "displayname": row[2],
-      "PFP": row[3],
-      "bio": row[4]
-    }
+    user_info = {'snowflake': row[0], 'username': row[1], 'displayname': row[2], 'PFP': row[3], 'bio': row[4]}
     break
-  
   if not user_info:
     return flask.redirect(flask.url_for('index_pagehandle'))
-    
   posts = get_posts_by_username(username)
-  return flask.render_template('specific_user.html', posts=posts, user=user_info)
+  follower_count = len(get_followers(username))
+  following_count = len(get_following(username))
+  is_following = False
+  if 'snowflake' in flask.session:
+    qu2 = cnx.cursor()
+    qu2.execute('SELECT 1 FROM follows WHERE follower=%s AND leader=%s'.replace('%s', replchar),
+                (flask.session['snowflake'], user_info['snowflake']))
+    is_following = qu2.fetchone() is not None
+  return flask.render_template('specific_user.html',
+    posts=posts, user=user_info,
+    follower_count=follower_count, following_count=following_count,
+    is_following=is_following, username=flask.session.get('username', ''))
+
 
 @wib.route('/@<username>/followers')
 def followers_pagehandle(username):
@@ -372,11 +376,21 @@ def reply_pagehandle(post_id):
 
 @wib.route('/@<username>/<int:post_id>')
 def show_post_pagehandle(username, post_id):
+  try:
+    p = get_post(post_id)
+  except StopIteration:
+    return 'Post not found', 404
+  replies = get_sub_posts(post_id)
+  qu = cnx.cursor()
+  qu.execute('SELECT COUNT(*) FROM likes WHERE post=%s'.replace('%s', replchar), (post_id,))
+  like_count = qu.fetchone()[0]
+  user_liked = False
+  if 'snowflake' in flask.session:
+    user_liked = get_like(flask.session['snowflake'], post_id)
   return flask.render_template('specific_post.html',
-      post=get_post(post_id),
-      username=flask.session.get('username'),
-      userPFP=flask.session.get('PFP'),
-      )
+    post=p, replies=replies, like_count=like_count,
+    user_liked=user_liked, username=flask.session.get('username', ''),
+    userPFP=flask.session.get('PFP'))
 
 @wib.route('/reboot', methods=['GET', 'POST'])
 def reboot_pagehandle():
@@ -390,6 +404,60 @@ def reboot_pagehandle():
     if m.hexdigest().upper() == "3DA5DAC093EFA65422CBB22AF4588C65":
       os.kill(os.getpid(), signal.SIGINT)
   return '<form method="post"><p><input type=text name=REBOOTCODE><p><input type=submit value=REBOOT></form>'
+
+# Settings
+def _get_user(snowflake):
+  qu = cnx.cursor()
+  qu.execute('SELECT snowflake, username, displayname, PFP, bio FROM users WHERE snowflake=%s'.replace('%s', replchar), (snowflake,))
+  row = qu.fetchone()
+  if row:
+    return {'snowflake': row[0], 'username': row[1], 'displayname': row[2] or row[1], 'PFP': row[3] or '', 'bio': row[4] or ''}
+  return None
+
+@wib.route('/settings')
+def settings_page():
+  if 'username' not in flask.session:
+    return flask.redirect(flask.url_for('login_pagehandle'))
+  return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']), username=flask.session['username'])
+
+@wib.route('/settings/profile', methods=['POST'])
+def update_profile():
+  if 'snowflake' not in flask.session:
+    return flask.redirect(flask.url_for('login_pagehandle'))
+  user = _get_user(flask.session['snowflake'])
+  qu = cnx.cursor()
+  qu.execute('UPDATE users SET bio=%s, PFP=%s, displayname=%s WHERE snowflake=%s'.replace('%s', replchar),
+             (flask.request.form.get('bio', user['bio']), flask.request.form.get('pfp', user['pfp']),
+              flask.request.form.get('displayname', user['displayname']), flask.session['snowflake']))
+  cnx.commit()
+  return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']),
+                               username=flask.session['username'], success='Profile updated.')
+
+@wib.route('/settings/password', methods=['POST'])
+def change_password():
+  # TODO: Nothing in here matches the login errors
+  if 'snowflake' not in flask.session:
+    return flask.redirect(flask.url_for('login_pagehandle'))
+  cur_pw = flask.request.form.get('current_password', '')
+  new_pw = flask.request.form.get('new_password', '')
+  confirm = flask.request.form.get('confirm_password', '')
+  def _err(msg):
+      return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']),
+                                   username=flask.session['username'], error=msg)
+  if new_pw != confirm:
+    return _err('New passwords do not match.')
+  if not 6 <= len(new_pw) <= 128:
+    return _err('Password must be between 6 and 128 characters.')
+  qu = cnx.cursor()
+  qu.execute('SELECT 1 FROM users WHERE snowflake=%s AND password=%s'.replace('%s', replchar),
+             (flask.session['snowflake'], cur_pw.encode('UTF8').hex()))
+  if not qu.fetchone():
+    return _err('Current password is incorrect.')
+  qu.execute('UPDATE users SET password=%s WHERE snowflake=%s'.replace('%s', replchar),
+             (new_pw.encode('UTF8').hex(), flask.session['snowflake']))
+  cnx.commit()
+  return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']),
+                               username=flask.session['username'], success='Password changed successfully.')
 
 # === API ===
 
@@ -468,3 +536,22 @@ def unfollow_apihandle(leader_id):
     return flask.jsonify(True), 200
   except IntegrityError:
     return flask.jsonify(False), 409
+
+@wib.context_processor
+def inject_helpers():
+    def check_liked(post_sf):
+        if 'snowflake' not in flask.session:
+            return False
+        return get_like(flask.session['snowflake'], post_sf)
+
+    def get_likes(post_sf):
+        qu = cnx.cursor()
+        qu.execute('SELECT COUNT(*) FROM likes WHERE post=%s'.replace('%s', replchar), (post_sf,))
+        return qu.fetchone()[0]
+
+    def get_replies(post_sf):
+        qu = cnx.cursor()
+        qu.execute('SELECT COUNT(*) FROM posts WHERE reply_to=%s'.replace('%s', replchar), (post_sf,))
+        return qu.fetchone()[0]
+
+    return dict(check_liked=check_liked, get_likes=get_likes, get_replies=get_replies)
