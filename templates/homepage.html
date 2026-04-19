@@ -26,8 +26,11 @@
                 <input type="hidden" name="anon" value="">
 
                 <div id="image-preview-container" style="display: none; position: relative; margin-top: 0.5rem;">
-                    <img id="image-preview" src="" style="width: 100%; border-radius: 8px; border: 2px solid var(--navy); max-height: 250px; object-fit: contain; background: #000;">
-                    <button type="button" onclick="clearImagePreview()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+                    <img id="image-preview" src=""
+                        style="width: 100%; border-radius: 8px; border: 2px solid var(--navy); max-height: 250px; object-fit: contain; background: #000;">
+                    <button type="button" onclick="clearImagePreview()"
+                        style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i
+                            data-lucide="x" style="width:16px;height:16px;"></i></button>
                 </div>
 
                 <div class="composer-actions">
@@ -62,7 +65,7 @@
 
     const imageFileInput = document.getElementById('image-file-input');
     if (imageFileInput) {
-        imageFileInput.addEventListener('change', function(e) {
+        imageFileInput.addEventListener('change', function (e) {
             if (this.files && this.files[0]) {
                 const url = URL.createObjectURL(this.files[0]);
                 document.getElementById('image-preview').src = url;
@@ -75,7 +78,7 @@
 
     const imageUrlInput = document.getElementById('image-url-input');
     if (imageUrlInput) {
-        imageUrlInput.addEventListener('input', function(e) {
+        imageUrlInput.addEventListener('input', function (e) {
             if (this.value.trim()) {
                 document.getElementById('image-preview').src = this.value.trim();
                 document.getElementById('image-preview-container').style.display = 'block';
@@ -192,24 +195,27 @@
 
                 // Build the new post card in the DOM
                 const username = '{{ username }}';
+                const userPFP = '{{ userPFP }}';
                 const newCard = document.createElement('article');
                 newCard.className = 'post-card';
                 newCard.innerHTML = `
                 <div class="post-avatar">
                     <a href="/@${username}">
-                        <img src="https://ui-avatars.com/api/?name=${username}&background=random&size=120&bold=true" alt="Avatar">
+                        <img src="${userPFP}" alt="Avatar">
                     </a>
                 </div>
                 <div class="post-content">
                     <div class="post-header">
                         <a href="/@${username}" class="post-name-link">
-                            <span class="post-name">${username.toUpperCase()}</span>
+                            <span class="post-name">${username}</span>
                         </a>
-                        <span class="post-handle">@${username.toLowerCase()}</span>
+                        <span class="post-handle">@${username}</span>
                         <span class="post-dot">&middot;</span>
-                        <span class="post-time">now</span>
+                        <a href="/@${username}" class="post-time">now</a>
                     </div>
-                    <div class="post-text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                    <a href="/@${username}" style="text-decoration:none;color:inherit;">
+                        <div class="post-text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                    </a>
                     ${image ? '<div class="post-media"><img src="' + image + '" alt="Post attachment" onerror="this.style.display=\'none\'"></div>' : ''}
                     <div class="post-actions">
                         <div class="action-item">
