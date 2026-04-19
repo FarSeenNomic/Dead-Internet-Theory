@@ -1,6 +1,22 @@
 import flask
 import time
 import configparser
+import hashlib
+import os
+
+def handle_upload(request):
+  file = request.files.get("image_file")
+  if file and file.filename:
+    file_content = file.read()
+    if file_content:
+      h = hashlib.md5(file_content).hexdigest()
+      ext = os.path.splitext(file.filename)[1]
+      filename = h + ext
+      os.makedirs("uploads", exist_ok=True)
+      with open(os.path.join("uploads", filename), "wb") as f:
+        f.write(file_content)
+      return "/uploads/" + filename
+  return request.form.get("image_url", "")
 
 config = configparser.ConfigParser()
 out = config.read('settings.ini')
@@ -247,6 +263,10 @@ def get_sub_posts(postnum):
   qu.execute("SELECT * FROM posts WHERE reply_to=%s ORDER BY snowflake".replace("%s", replchar), (postnum,)) # TODO: recurse?
   return [post(*data) for data in qu]
 
+@wib.route('/uploads/<filename>')
+def uploaded_file(filename):
+  return flask.send_from_directory(os.path.abspath('uploads'), filename)
+
 @wib.route("/")
 def index_pagehandle():
   if 'username' in flask.session:
@@ -357,7 +377,7 @@ def create_pagehandle():
   if not owner:
     return "Bad Info", 401
 
-  make_post(owner, flask.request.form.get("text", ""), None, flask.request.form.get("image", ""))
+  make_post(owner, flask.request.form.get("text", ""), None, handle_upload(flask.request))
 
   return flask.redirect(flask.url_for('index_pagehandle'))
 
@@ -370,7 +390,7 @@ def reply_pagehandle(post_id):
   if not owner:
     return "Bad Info", 401
 
-  make_post(owner, flask.request.form.get("text", ""), post_id, flask.request.form.get("image", ""))
+  make_post(owner, flask.request.form.get("text", ""), post_id, handle_upload(flask.request))
 
   return flask.redirect(flask.url_for('index_pagehandle'))
 
@@ -427,7 +447,7 @@ def update_profile():
   user = _get_user(flask.session['snowflake'])
   qu = cnx.cursor()
   qu.execute('UPDATE users SET bio=%s, PFP=%s, displayname=%s WHERE snowflake=%s'.replace('%s', replchar),
-             (flask.request.form.get('bio', user['bio']), flask.request.form.get('pfp', user['pfp']),
+             (flask.request.form.get('bio', user['bio']), flask.request.form.get('pfp', user['PFP']),
               flask.request.form.get('displayname', user['displayname']), flask.session['snowflake']))
   cnx.commit()
   return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']),
@@ -435,7 +455,7 @@ def update_profile():
 
 @wib.route('/settings/password', methods=['POST'])
 def change_password():
-  # TODO: Nothing in here matches the login errors
+  # TODO: Nothing in here matches the create account errors
   if 'snowflake' not in flask.session:
     return flask.redirect(flask.url_for('login_pagehandle'))
   cur_pw = flask.request.form.get('current_password', '')

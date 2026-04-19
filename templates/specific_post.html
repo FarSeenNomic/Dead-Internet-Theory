@@ -63,24 +63,72 @@
             <img src="{{ userPFP }}" alt="Avatar">
         </div>
         <div class="composer-body">
-            <form action="/reply/{{ post.snowflake }}" method="POST" novalidate>
+            <form action="/reply/{{ post.snowflake }}" method="POST" enctype="multipart/form-data" novalidate>
                 <textarea name="text" class="composer-input" placeholder="Post your reply..." rows="2"></textarea>
+
+                <div id="reply-preview-container" style="display: none; position: relative; margin-top: 0.5rem;">
+                    <img id="reply-preview" src="" style="width: 100%; border-radius: 8px; border: 2px solid var(--navy); max-height: 250px; object-fit: contain; background: #000;">
+                    <button type="button" onclick="clearReplyPreview()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+                </div>
+
                 <div class="composer-actions">
                     <div class="composer-tools">
-                        <button type="button" class="tool-btn"
+                        <button type="button" class="tool-btn" title="Image URL"
                             onclick="const el=document.getElementById('reply-img');el.style.display=el.style.display==='none'?'block':'none';">
+                            <i data-lucide="link"></i>
+                        </button>
+                        <button type="button" class="tool-btn" title="Upload Image"
+                            onclick="document.getElementById('reply-file-img').click();">
                             <i data-lucide="image"></i>
                         </button>
                     </div>
                     <button type="submit" class="btn btn-primary">REPLY</button>
                 </div>
-                <input type="url" name="image" id="reply-img" class="composer-input"
+                <input type="url" name="image_url" id="reply-img" class="composer-input"
                     placeholder="Paste image URL here..."
                     style="display:none;min-height:40px;margin-top:.75rem;font-size:.95rem;padding:.5rem 1rem;">
+                <input type="file" name="image_file" id="reply-file-img" accept="image/*" style="display:none;">
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    function clearReplyPreview() {
+        const fileInput = document.getElementById('reply-file-img');
+        const urlInput = document.getElementById('reply-img');
+        if (fileInput) fileInput.value = '';
+        if (urlInput) urlInput.value = '';
+        document.getElementById('reply-preview-container').style.display = 'none';
+        document.getElementById('reply-preview').src = '';
+    }
+
+    const replyFileImg = document.getElementById('reply-file-img');
+    if (replyFileImg) {
+        replyFileImg.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const url = URL.createObjectURL(this.files[0]);
+                document.getElementById('reply-preview').src = url;
+                document.getElementById('reply-preview-container').style.display = 'block';
+                document.getElementById('reply-img').style.display = 'none';
+                if (window.lucide) lucide.createIcons();
+            }
+        });
+    }
+
+    const replyUrlImg = document.getElementById('reply-img');
+    if (replyUrlImg) {
+        replyUrlImg.addEventListener('input', function(e) {
+            if (this.value.trim()) {
+                document.getElementById('reply-preview').src = this.value.trim();
+                document.getElementById('reply-preview-container').style.display = 'block';
+                if (window.lucide) lucide.createIcons();
+            } else {
+                document.getElementById('reply-preview-container').style.display = 'none';
+            }
+        });
+    }
+</script>
 {% endif %}
 
 <!-- Replies -->

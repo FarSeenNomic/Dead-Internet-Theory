@@ -25,21 +25,67 @@
                 <!-- Anonymous toggle for backend compatibility hidden but default false -->
                 <input type="hidden" name="anon" value="">
 
+                <div id="image-preview-container" style="display: none; position: relative; margin-top: 0.5rem;">
+                    <img id="image-preview" src="" style="width: 100%; border-radius: 8px; border: 2px solid var(--navy); max-height: 250px; object-fit: contain; background: #000;">
+                    <button type="button" onclick="clearImagePreview()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+                </div>
+
                 <div class="composer-actions">
                     <div class="composer-tools">
-                        <button type="button" class="tool-btn"
+                        <button type="button" class="tool-btn" title="Image URL"
                             onclick="const el = document.getElementById('image-url-input'); el.style.display = el.style.display === 'none' ? 'block' : 'none';"><i
+                                data-lucide="link"></i></button>
+                        <button type="button" class="tool-btn" title="Upload Image"
+                            onclick="document.getElementById('image-file-input').click();"><i
                                 data-lucide="image"></i></button>
                     </div>
                     <button type="button" id="senddit-btn" class="btn btn-primary">SEND'DIT</button>
                 </div>
-                <input type="url" name="image" id="image-url-input" class="composer-input"
+                <input type="url" name="image_url" id="image-url-input" class="composer-input"
                     placeholder="Paste image URL here..."
                     style="display: none; min-height: 40px; margin-top: 0.75rem; font-size: 0.95rem; padding: 0.5rem 1rem;">
+                <input type="file" name="image_file" id="image-file-input" accept="image/*" style="display: none;">
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    function clearImagePreview() {
+        const fileInput = document.getElementById('image-file-input');
+        const urlInput = document.getElementById('image-url-input');
+        if (fileInput) fileInput.value = '';
+        if (urlInput) urlInput.value = '';
+        document.getElementById('image-preview-container').style.display = 'none';
+        document.getElementById('image-preview').src = '';
+    }
+
+    const imageFileInput = document.getElementById('image-file-input');
+    if (imageFileInput) {
+        imageFileInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const url = URL.createObjectURL(this.files[0]);
+                document.getElementById('image-preview').src = url;
+                document.getElementById('image-preview-container').style.display = 'block';
+                document.getElementById('image-url-input').style.display = 'none';
+                if (window.lucide) lucide.createIcons();
+            }
+        });
+    }
+
+    const imageUrlInput = document.getElementById('image-url-input');
+    if (imageUrlInput) {
+        imageUrlInput.addEventListener('input', function(e) {
+            if (this.value.trim()) {
+                document.getElementById('image-preview').src = this.value.trim();
+                document.getElementById('image-preview-container').style.display = 'block';
+                if (window.lucide) lucide.createIcons();
+            } else {
+                document.getElementById('image-preview-container').style.display = 'none';
+            }
+        });
+    }
+</script>
 
 <div class="feed-section">
     {% for post in posts %}
@@ -120,8 +166,14 @@
                 }
 
                 // Grab image URL if any
+                let image = '';
                 const imageEl = document.getElementById('image-url-input');
-                const image = imageEl ? imageEl.value.trim() : '';
+                const fileEl = document.getElementById('image-file-input');
+                if (imageEl && imageEl.value.trim()) {
+                    image = imageEl.value.trim();
+                } else if (fileEl && fileEl.files.length > 0) {
+                    image = URL.createObjectURL(fileEl.files[0]);
+                }
 
                 // Submit via AJAX — no page reload
                 const formData = new FormData(document.getElementById('compose-form'));
@@ -135,6 +187,8 @@
                 // Clear inputs
                 textEl.value = '';
                 if (imageEl) { imageEl.value = ''; imageEl.style.display = 'none'; }
+                if (fileEl) { fileEl.value = ''; }
+                if (typeof clearImagePreview === 'function') clearImagePreview();
 
                 // Build the new post card in the DOM
                 const username = '{{ username }}';
