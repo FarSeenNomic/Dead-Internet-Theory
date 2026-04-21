@@ -498,11 +498,33 @@ def update_profile():
   if 'snowflake' not in flask.session:
     return flask.redirect(flask.url_for('login_pagehandle'))
   user = _get_user(flask.session['snowflake'])
+  
+  new_pfp = user['PFP']
+
+  file = flask.request.files.get("image_file")
+  if file and file.filename:
+    file_content = file.read()
+    if file_content:
+      h = hashlib.md5(file_content).hexdigest()
+      ext = os.path.splitext(file.filename)[1]
+      filename = h + ext
+      os.makedirs("uploads", exist_ok=True)
+      with open(os.path.join("uploads", filename), "wb") as f:
+        f.write(file_content)
+      new_pfp = "/uploads/" + filename
+  else:
+    provided_pfp = flask.request.form.get('pfp')
+    if provided_pfp is not None:
+      new_pfp = provided_pfp
+
   qu = cnx.cursor()
   qu.execute('UPDATE users SET bio=%s, PFP=%s, displayname=%s WHERE snowflake=%s'.replace('%s', replchar),
-             (flask.request.form.get('bio', user['bio']), flask.request.form.get('pfp', user['PFP']),
+             (flask.request.form.get('bio', user['bio']), new_pfp,
               flask.request.form.get('displayname', user['displayname']), flask.session['snowflake']))
   cnx.commit()
+  
+  flask.session['PFP'] = new_pfp
+
   return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']),
                                username=flask.session['username'], success='Profile updated.')
 
