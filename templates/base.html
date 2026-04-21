@@ -26,15 +26,15 @@
                     <i data-lucide="home"></i>
                     <span>HOME</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="/explore" class="nav-item {% if request.path == '/explore' %}active{% endif %}">
                     <i data-lucide="compass"></i>
                     <span>EXPLORE</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="/replies" class="nav-item">
                     <i data-lucide="bell"></i>
-                    <span>NOTIFICATIONS</span>
+                    <span>REPLIES</span>
                 </a>
-                <a href="{% if 'username' in session %}/@{{ session.username }}{% else %}#{% endif %}" class="nav-item {% if '/@' in request.path and '/followers' not in request.path and '/following' not in request.path %}active{% endif %}">
+                <a href="{% if 'username' in session %}/@{{ session.username }}{% else %}/register{% endif %}" class="nav-item {% if '/@' in request.path and '/followers' not in request.path and '/following' not in request.path %}active{% endif %}">
                     <i data-lucide="user"></i>
                     <span>PROFILE</span>
                 </a>

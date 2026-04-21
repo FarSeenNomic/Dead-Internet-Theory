@@ -127,7 +127,7 @@ try:
 except AssertionError as e:
   print("Error", e)
 
-response = user3.post("http://localhost:5000/create", data={"text": "This nincompoop won't stop leaving these pictures on the job board.", "image": "https://64.media.tumblr.com/108628e7ab397985d6d4ea9aab7a43d1/c497e05a44d10137-8c/s1280x1920/2922a934ba2e6492d1b829a1626db05a38f88d52.jpg"})
+response = user3.post("http://localhost:5000/create", data={"text": "This nincompoop won't stop leaving these pictures on the job board.", "image_url": "https://64.media.tumblr.com/108628e7ab397985d6d4ea9aab7a43d1/c497e05a44d10137-8c/s1280x1920/2922a934ba2e6492d1b829a1626db05a38f88d52.jpg"})
 print(f"image {user1_data['username']}")
 
 try:

@@ -172,6 +172,29 @@ def get_posts(snowflake=0):
     postc.append(post(*data))
   return postc
 
+def get_replies(snowflake):
+  qu = cnx.cursor()
+  qu.execute("""
+    SELECT * FROM posts
+    WHERE reply_to IN (SELECT snowflake FROM posts WHERE owner_snowflake=%s)
+    ORDER BY snowflake DESC LIMIT 255
+    """.replace("%s", replchar), (snowflake,))
+  postc = []
+  for data in qu:
+    postc.append(post(*data))
+  return postc
+
+def get_posts_homepage(snowflake):
+  qu = cnx.cursor()
+  qu.execute("""SELECT * FROM posts 
+    WHERE owner_snowflake IN (SELECT leader FROM follows WHERE follower=%s)
+       OR owner_snowflake=%s
+    ORDER BY snowflake DESC LIMIT 255""".replace("%s", replchar), (snowflake,snowflake,))
+  postc = []
+  for data in qu:
+    postc.append(post(*data))
+  return postc 
+
 def get_reply_count(snowflake):
   qu = cnx.cursor()
   qu.execute("SELECT COUNT(*) FROM posts WHERE reply_to=%s".replace("%s", replchar), (snowflake,))
@@ -274,7 +297,31 @@ def index_pagehandle():
       'homepage.html',
       username=flask.session.get('username'),
       userPFP=flask.session.get('PFP'),
+      posts=get_posts_homepage(flask.session['snowflake']),
+      )
+  else:
+    return flask.redirect(flask.url_for('register_pagehandle'))
+
+@wib.route("/explore")
+def explore_pagehandle():
+  if 'username' in flask.session:
+    return flask.render_template(
+      'homepage.html',
+      username=flask.session.get('username'),
+      userPFP=flask.session.get('PFP'),
       posts=get_posts(),
+      )
+  else:
+    return flask.redirect(flask.url_for('register_pagehandle'))
+
+@wib.route("/replies")
+def replies_pagehandle():
+  if 'username' in flask.session:
+    return flask.render_template(
+      'homepage.html',
+      username=flask.session.get('username'),
+      userPFP=flask.session.get('PFP'),
+      posts=get_replies(flask.session['snowflake']),
       )
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
@@ -343,7 +390,10 @@ def register_pagehandle():
   if flask.request.method == 'GET':
     return flask.render_template('register.html')
   username_try = flask.request.form.get('username')
-  password_try = flask.request.form.get('password')
+  password_try1 = flask.request.form.get('password')
+  password_try2 = flask.request.form.get('password2')
+  if password_try2 == None:
+    password_try2 = password_try1 # Allow bots in with one password
 
   # database verifies unique.
   username_try = username_try.strip()
@@ -351,11 +401,14 @@ def register_pagehandle():
   if username_try.startswith("@"):
     username_try = username_try[1:]
 
-  if not 6 <= len(password_try) <= 64:
+  if password_try1 != password_try2:
+    return flask.render_template('register.html', error="Passwords do not match."), 422
+
+  if not 6 <= len(password_try1) <= 128:
     return flask.render_template('register.html', error="Password must be between 6 and 128 characters."), 422
 
   try:
-    create_user(username_try, password_try)
+    create_user(username_try, password_try1)
   except IntegrityError:
     return flask.render_template('register.html', error="Username Taken."), 409
 
@@ -484,6 +537,12 @@ def change_password():
 @wib.route('/posts.json/')
 def posts_apihandle():
   return [p.__dict__ for p in get_posts()]
+
+@wib.route('/feed.json/')
+def feed_apihandle():
+  if 'snowflake' not in flask.session:
+    return []
+  return [p.__dict__ for p in get_posts_homepage(flask.session['snowflake'])]
 
 @wib.route('/post.json/<int:post_id>')
 def post_apihandle(post_id):
