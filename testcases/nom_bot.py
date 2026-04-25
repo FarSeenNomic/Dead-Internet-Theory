@@ -29,7 +29,7 @@ def LLM4_request(prompt, dev=""):
 
 def LLM4_vision(prompt, img_url, dev=""):
   for _ in range(3):
-    response = client.responses.create(
+    completion = client.responses.create(
     model="*",
     input=[
       {"role": "developer", "content": "Do not use any Emoji."},
@@ -91,7 +91,7 @@ class person():
 
   def create_post(self, text, image=""):
     self.login()
-    return self.session.post(f"{SITE_URL}/create", data={"text":text, 'image':image})
+    return self.session.post(f"{SITE_URL}/create", data={"text":text, 'image_url':image})
 
   def reply_to_post(self, replyto, text, image=""):
     self.login()
