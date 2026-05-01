@@ -30,11 +30,12 @@
                     <i data-lucide="compass"></i>
                     <span>EXPLORE</span>
                 </a>
-                <a href="/replies" class="nav-item">
+                {% if 'username' in session %}
+                <a href="/replies" class="nav-item {% if request.path == '/replies' %}active{% endif %}">
                     <i data-lucide="bell"></i>
                     <span>REPLIES</span>
                 </a>
-                <a href="{% if 'username' in session %}/@{{ session.username }}{% else %}/register{% endif %}" class="nav-item {% if '/@' in request.path and '/followers' not in request.path and '/following' not in request.path %}active{% endif %}">
+                <a href="/@{{ session.username }}" class="nav-item {% if '/@' in request.path %}active{% endif %}">
                     <i data-lucide="user"></i>
                     <span>PROFILE</span>
                 </a>
@@ -43,10 +44,20 @@
                     <span>SETTINGS</span>
                 </a>
                 
-                {% if request.path != '/login' and 'username' in session %}
+                {% if request.path != '/login' %}
                 <a href="/logout" class="nav-item" style="margin-top: auto;">
                     <i data-lucide="log-out"></i>
                     <span>LOGOUT</span>
+                </a>
+                {% endif %}
+                {% else %}
+                <a href="/login" class="nav-item {% if request.path == '/login' %}active{% endif %}">
+                    <i data-lucide="log-in"></i>
+                    <span>LOGIN</span>
+                </a>
+                <a href="/register" class="nav-item {% if request.path == '/register' %}active{% endif %}">
+                    <i data-lucide="user-plus"></i>
+                    <span>REGISTER</span>
                 </a>
                 {% endif %}
             </nav>
@@ -59,7 +70,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="main-header">
-                <h1>HOME</h1>
+                <h1>{% block page_title %}HOME{% endblock %}</h1>
             </header>
             <div class="content-scroll">
                 {% block content %}

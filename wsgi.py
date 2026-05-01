@@ -310,6 +310,7 @@ def explore_pagehandle():
       username=flask.session.get('username'),
       userPFP=flask.session.get('PFP'),
       posts=get_posts(),
+      page_title='EXPLORE',
       )
   else:
     return flask.redirect(flask.url_for('register_pagehandle'))
@@ -318,7 +319,7 @@ def explore_pagehandle():
 def replies_pagehandle():
   if 'username' in flask.session:
     return flask.render_template(
-      'homepage.html',
+      'replies.html',
       username=flask.session.get('username'),
       userPFP=flask.session.get('PFP'),
       posts=get_replies(flask.session['snowflake']),
@@ -516,6 +517,8 @@ def update_profile():
     provided_pfp = flask.request.form.get('pfp')
     if provided_pfp is not None:
       new_pfp = provided_pfp
+      if not new_pfp.strip():
+        new_pfp = "https://www.marclittlemore.com/easily-create-gravatar-images-with-eleventy/TZQgcTQa8R-256.jpeg"
 
   qu = cnx.cursor()
   qu.execute('UPDATE users SET bio=%s, PFP=%s, displayname=%s WHERE snowflake=%s'.replace('%s', replchar),

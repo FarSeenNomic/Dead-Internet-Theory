@@ -2,6 +2,8 @@
 
 {% block title %} DIT - @{{ user.username }} {% endblock %}
 
+{% block page_title %}@{{ user.username | upper }}{% endblock %}
+
 {% block content %}
 <!-- Profile Header -->
 <div class="profile-header">
@@ -54,7 +56,7 @@
     {% for p in posts %}
     <article class="post-card">
         <div class="post-avatar">
-            <img src="{{ p.owner_pfp }}" alt="Avatar">
+            <img src="{{ p.owner_pfp }}" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ p.owner_username }}&background=1e293b&color=fff&size=120&bold=true'">
         </div>
         <div class="post-content">
             <div class="post-header">
@@ -76,6 +78,11 @@
                     <a href="/@{{ user.username }}/{{ p.snowflake }}" class="action-btn" style="color:inherit;">
                         <i class="icon" data-lucide="message-square"></i>
                     </a>
+                    <span class="action-count">{{ get_replies(p.snowflake) }}</span>
+                </div>
+                <div class="action-item">
+                    <button type="button" class="action-btn"><i class="icon" data-lucide="repeat"></i></button>
+                    <span class="action-count">0</span>
                 </div>
                 <div
                     class="action-item like-toggle-{{ p.snowflake }} {% if check_liked(p.snowflake) %}active-orange{% endif %}">
@@ -85,7 +92,7 @@
                     <span class="action-count" id="likes-{{ p.snowflake }}">{{ get_likes(p.snowflake) }}</span>
                 </div>
                 <div class="action-item">
-                    <button type="button" class="action-btn"><i class="icon" data-lucide="share-2"></i></button>
+                    <button type="button" class="action-btn" onclick="shareDIT('/@{{ user.username }}/{{ p.snowflake }}')"><i class="icon" data-lucide="share-2"></i></button>
                 </div>
             </div>
         </div>
@@ -128,6 +135,16 @@
                 c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
             }
         } catch (e) { console.error(e); }
+    }
+    function shareDIT(path) {
+        const url = window.location.origin + path;
+        navigator.clipboard.writeText(url).then(() => {
+            const toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = 'LINK COPIED';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
     }
 </script>
 {% endblock %}

@@ -2,9 +2,10 @@
 
 {% block title %} DIT - Settings {% endblock %}
 
+{% block page_title %}SETTINGS{% endblock %}
+
 {% block content %}
 <div class="settings-container">
-    <h2 style="font-weight:800;margin-bottom:2rem;">SETTINGS</h2>
 
     {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
     {% if success %}<div class="success-msg">{{ success }}</div>{% endif %}
@@ -26,7 +27,7 @@
                 <div style="display: flex; gap: 0.5rem; flex-direction: column;">
                     <input type="file" name="image_file" id="image_file" class="form-control" accept="image/*" onchange="previewImage(this)">
                     <span style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">OR</span>
-                    <input type="url" name="pfp" id="pfp" class="form-control" value="{{ profile.PFP or '' }}" placeholder="Profile Picture URL (https://...)" onchange="previewUrl(this.value)">
+                    <input type="url" name="pfp" id="pfp" class="form-control" value="{% if profile.PFP and profile.PFP != 'https://www.marclittlemore.com/easily-create-gravatar-images-with-eleventy/TZQgcTQa8R-256.jpeg' %}{{ profile.PFP }}{% endif %}" placeholder="Profile Picture URL (https://...)" onchange="previewUrl(this.value)">
                 </div>
             </div>
             <div style="margin-bottom:1rem;{% if not (profile.PFP and profile.PFP != '/noPFP.jpg' and profile.PFP != '') %} display:none;{% endif %}" id="pfp-preview-container">

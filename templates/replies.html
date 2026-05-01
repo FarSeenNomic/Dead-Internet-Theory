@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %} DIT - Replies {% endblock %}
+
+{% block page_title %}REPLIES{% endblock %}
+
+{% block content %}
+<div class="feed-section">
+    {% for post in posts %}
+    <article class="post-card">
+        {% if post.reply_to %}
+        <div class="reply-context">
+            <i data-lucide="corner-down-right" style="width:14px;height:14px;"></i>
+            <span>Replying to <a href="/@{{ post.owner_username }}/{{ post.reply_to }}" style="color:var(--orange);font-weight:600;">Post #{{ post.reply_to }}</a></span>
+        </div>
+        {% endif %}
+        <div class="post-card-inner">
+            <div class="post-avatar">
+                <a href="/@{{ post.owner_username }}">
+                    <img src="{{ post.owner_pfp }}" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ post.owner_username }}&background=1e293b&color=fff&size=120&bold=true'">
+                </a>
+            </div>
+            <div class="post-content">
+                <div class="post-header">
+                    <a href="/@{{ post.owner_username }}" class="post-name-link">
+                        <span class="post-name">{{ post.owner_displayname }}</span>
+                    </a>
+                    <span class="post-handle">@{{ post.owner_username }}</span>
+                    <span class="post-dot">&middot;</span>
+                    <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" class="post-time">View</a>
+                </div>
+
+                <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" style="text-decoration:none;color:inherit;">
+                    <div class="post-text">{{ post.text }}</div>
+                </a>
+
+                {% if post.image and post.image != 'None' and post.image != '' %}
+                <div class="post-media">
+                    <img src="{{ post.image }}" alt="Post attachment" onerror="this.style.display='none'">
+                </div>
+                {% endif %}
+
+                <div class="post-actions">
+                    <div class="action-item">
+                        <a href="/@{{ post.owner_username }}/{{ post.snowflake }}" class="action-btn" style="color:inherit;"><i class="icon" data-lucide="message-square"></i></a>
+                        <span class="action-count">{{ get_replies(post.snowflake) }}</span>
+                    </div>
+                    <div class="action-item like-toggle-{{ post.snowflake }} {% if check_liked(post.snowflake) %}active-orange{% endif %}">
+                        <button type="button" class="action-btn" onclick="toggleLike({{ post.snowflake }})"><i class="icon" data-lucide="triangle"></i></button>
+                        <span class="action-count" id="likes-{{ post.snowflake }}">{{ get_likes(post.snowflake) }}</span>
+                    </div>
+                    <div class="action-item">
+                        <button type="button" class="action-btn" onclick="shareDIT('/@{{ post.owner_username }}/{{ post.snowflake }}')"><i class="icon" data-lucide="share-2"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+    {% else %}
+    <div class="empty-state">
+        <p>No replies to your posts yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    async function toggleLike(postId) {
+        const item = document.querySelector(`.like-toggle-${postId}`);
+        const isLiked = item.classList.contains('active-orange');
+        const url = isLiked ? `/unlike.json/${postId}` : `/like.json/${postId}`;
+        try {
+            const res = await fetch(url, { method: 'POST' });
+            const ok = await res.json();
+            if (ok) {
+                item.classList.toggle('active-orange');
+                const c = document.getElementById(`likes-${postId}`);
+                c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
+            }
+        } catch (e) { console.error(e); }
+    }
+    function shareDIT(path) {
+        const url = window.location.origin + path;
+        navigator.clipboard.writeText(url).then(() => {
+            const toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = 'LINK COPIED';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
+    }
+</script>
+{% endblock %}

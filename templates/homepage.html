@@ -2,15 +2,17 @@
 
 {% block title %} DIT - Feed {% endblock %}
 
+{% block page_title %}{{ page_title or 'HOME' }}{% endblock %}
+
 {% block content %}
 <!-- Composer -->
 <div class="composer-section">
     <div class="composer-wrapper">
         <div class="composer-avatar">
-            <img src="{{ userPFP }}" alt="Avatar">
+            <img src="{{ userPFP }}" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ username }}&background=1e293b&color=fff&size=120&bold=true'">
         </div>
         <div class="composer-body">
-            <form action="/create" method="POST" id="compose-form" novalidate>
+            <form action="/create" method="POST" id="compose-form" enctype="multipart/form-data" novalidate>
                 <div style="position: relative;">
                     <textarea name="text" id="composer-text" class="composer-input"
                         placeholder="Trumpet your thoughts..." autofocus rows="2"></textarea>
@@ -21,6 +23,7 @@
                         OUT THIS FIELD
                     </div>
                 </div>
+                <div class="char-counter" id="char-counter">140</div>
 
                 <!-- Anonymous toggle for backend compatibility hidden but default false -->
                 <input type="hidden" name="anon" value="">
@@ -95,7 +98,7 @@
     <article class="post-card">
         <div class="post-avatar">
             <a href="/@{{ post.owner_username }}">
-                <img src="{{ post.owner_pfp }}" alt="Avatar">
+                <img src="{{ post.owner_pfp }}" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ post.owner_username }}&background=1e293b&color=fff&size=120&bold=true'">
             </a>
         </div>
         <div class="post-content">
@@ -138,7 +141,7 @@
                     <span class="action-count" id="likes-{{ post.snowflake }}">{{ get_likes(post.snowflake) }}</span>
                 </div>
                 <div class="action-item">
-                    <button type="button" class="action-btn"><i class="icon" data-lucide="share-2"></i></button>
+                    <button type="button" class="action-btn" onclick="shareDIT('/@{{ post.owner_username }}/{{ post.snowflake }}')"><i class="icon" data-lucide="share-2"></i></button>
                 </div>
             </div>
         </div>
@@ -325,6 +328,28 @@
                 c.textContent = parseInt(c.textContent) + (isLiked ? -1 : 1);
             }
         } catch (e) { console.error(e); }
+    }
+
+    function shareDIT(path) {
+        const url = window.location.origin + path;
+        navigator.clipboard.writeText(url).then(() => {
+            const toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = 'LINK COPIED';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
+    }
+
+    // Character counter
+    const composerText = document.getElementById('composer-text');
+    const charCounter = document.getElementById('char-counter');
+    if (composerText && charCounter) {
+        composerText.addEventListener('input', () => {
+            const remaining = 140 - composerText.value.length;
+            charCounter.textContent = remaining;
+            charCounter.className = 'char-counter' + (remaining <= 20 ? ' warn' : '') + (remaining < 0 ? ' over' : '');
+        });
     }
 </script>
 
