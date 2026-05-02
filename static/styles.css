@@ -678,3 +678,30 @@ a {
     margin-top: 0.25rem;
     line-height: 1.4;
 }
+
+#easter-egg-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 48px;
+  height: 48px;
+  background: var(--orange);
+  color: white;
+  border: 2px solid var(--navy);
+  box-shadow: 4px 4px 0px 0px var(--navy);
+  display: none;
+  /* hidden until unlocked */
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#easter-egg-btn:hover {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+#easter-egg-btn:active {
+  transform: scale(0.9);
+}

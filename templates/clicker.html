@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %} DIT - Clicker {% endblock %}
+
+{% block content %}
+<div class="clicker-page">
+  <h1>⚡ DIT CLICKER ⚡</h1>
+
+  <div id="count">0</div>
+
+  <button id="click-btn" class="btn btn-primary">CLICK</button>
+
+
+</div>
+
+<style>
+  .clicker-page {
+    text-align: center;
+    padding: 3rem;
+  }
+
+  #count {
+    font-size: 5rem;
+    font-weight: 800;
+    margin: 2rem 0;
+    color: var(--orange);
+    transition: transform 0.1s;
+  }
+
+</style>
+
+<script>
+  let count = 0;
+  const countEl = document.getElementById('count');
+
+  // Load from backend
+  async function loadClicks() {
+    const res = await fetch('/clicks.json');
+    count = await res.json();
+    countEl.textContent = count;
+  }
+
+  loadClicks();
+
+  // Click handler
+  document.getElementById('click-btn').addEventListener('click', async () => {
+    await fetch('/click.json', { method: 'POST' });
+
+    count++;
+    countEl.textContent = count;
+
+    // animation
+    countEl.style.transform = 'scale(1.25)';
+    setTimeout(() => countEl.style.transform = 'scale(1)', 100);
+  });
+</script>
+{% endblock %}

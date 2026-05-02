@@ -154,6 +154,33 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('senddit-btn');
+
+        // Easter egg unlock (homepage only)
+      let secretClicks = 0;
+      const eggBtn = document.getElementById('easter-egg-btn');
+
+      document.body.addEventListener('click', (e) => {
+        if (!eggBtn) return;
+        if (e.target.closest('#easter-egg-btn')) return;
+
+        secretClicks++;
+
+        if (secretClicks === 12) {
+          eggBtn.style.display = 'flex';
+
+          // reveal animation
+          eggBtn.style.transform = 'scale(0)';
+          setTimeout(() => {
+            eggBtn.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
+            eggBtn.style.transform = 'scale(1.2) rotate(-10deg)';
+          }, 10);
+
+          setTimeout(() => {
+            eggBtn.style.transform = 'scale(1) rotate(0deg)';
+          }, 300);
+        }
+      });
+
         if (btn) {
             btn.addEventListener('click', async () => {
                 const textEl = document.getElementById('composer-text');
@@ -519,5 +546,14 @@
             });
         }
     });
+</script>
+
+<div id="easter-egg-btn" onclick="openClicker()">
+    <i data-lucide="zap"></i>
+</div>
+<script>
+function openClicker() {
+    window.location.href = "/clicker";
+    }
 </script>
 {% endblock %}

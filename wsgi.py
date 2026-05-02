@@ -101,6 +101,7 @@ try:
   PFP         URL,
   bio         TINYTEXT,
   api_key     CHAR(64),
+  clicks      INTEGER DEFAULT 0,
     UNIQUE (username),
     PRIMARY KEY (snowflake)
 )""".replace(*urlrep))
@@ -186,14 +187,14 @@ def get_replies(snowflake):
 
 def get_posts_homepage(snowflake):
   qu = cnx.cursor()
-  qu.execute("""SELECT * FROM posts 
+  qu.execute("""SELECT * FROM posts
     WHERE owner_snowflake IN (SELECT leader FROM follows WHERE follower=%s)
        OR owner_snowflake=%s
     ORDER BY snowflake DESC LIMIT 255""".replace("%s", replchar), (snowflake,snowflake,))
   postc = []
   for data in qu:
     postc.append(post(*data))
-  return postc 
+  return postc
 
 def get_reply_count(snowflake):
   qu = cnx.cursor()
@@ -211,8 +212,8 @@ def get_like_count(snowflake):
 
 def get_posts_by_username(username):
   qu = cnx.cursor()
-  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image 
-                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake 
+  qu.execute("""SELECT p.snowflake, p.owner_snowflake, p.text, p.reply_to, p.image
+                FROM posts p JOIN users u ON p.owner_snowflake = u.snowflake
                 WHERE u.username=%s ORDER BY p.snowflake DESC LIMIT 255""".replace("%s", replchar), (username,))
   postc = []
   for data in qu:
@@ -255,17 +256,17 @@ def unfollow_user(follower, leader):
 
 def get_followers(username):
   qu = cnx.cursor()
-  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio 
-                FROM users u JOIN follows f ON u.snowflake = f.follower 
-                JOIN users target ON f.leader = target.snowflake 
+  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio
+                FROM users u JOIN follows f ON u.snowflake = f.follower
+                JOIN users target ON f.leader = target.snowflake
                 WHERE target.username=%s""".replace("%s", replchar), (username,))
   return [{"snowflake": r[0], "username": r[1], "displayname": r[2], "PFP": r[3], "bio": r[4]} for r in qu]
 
 def get_following(username):
   qu = cnx.cursor()
-  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio 
-                FROM users u JOIN follows f ON u.snowflake = f.leader 
-                JOIN users target ON f.follower = target.snowflake 
+  qu.execute("""SELECT u.snowflake, u.username, u.displayname, u.PFP, u.bio
+                FROM users u JOIN follows f ON u.snowflake = f.leader
+                JOIN users target ON f.follower = target.snowflake
                 WHERE target.username=%s""".replace("%s", replchar), (username,))
   return [{"snowflake": r[0], "username": r[1], "displayname": r[2], "PFP": r[3], "bio": r[4]} for r in qu]
 
@@ -498,7 +499,7 @@ def update_profile():
   if 'snowflake' not in flask.session:
     return flask.redirect(flask.url_for('login_pagehandle'))
   user = _get_user(flask.session['snowflake'])
-  
+
   new_pfp = user['PFP']
 
   file = flask.request.files.get("image_file")
@@ -522,7 +523,7 @@ def update_profile():
              (flask.request.form.get('bio', user['bio']), new_pfp,
               flask.request.form.get('displayname', user['displayname']), flask.session['snowflake']))
   cnx.commit()
-  
+
   flask.session['PFP'] = new_pfp
 
   return flask.render_template('settings.html', profile=_get_user(flask.session['snowflake']),
@@ -656,3 +657,36 @@ def inject_helpers():
         return qu.fetchone()[0]
 
     return dict(check_liked=check_liked, get_likes=get_likes, get_replies=get_replies)
+
+
+
+#clicker html routes and def
+def get_clicks(user_sf):
+  qu = cnx.cursor()
+  qu.execute("SELECT clicks FROM users WHERE snowflake=%s".replace("%s", replchar), (user_sf,))
+  row = qu.fetchone()
+  return row[0] if row else 0
+
+def add_click(user_sf, amount=1):
+  qu = cnx.cursor()
+  qu.execute("UPDATE users SET clicks = clicks + %s WHERE snowflake=%s".replace("%s", replchar), (amount, user_sf))
+  cnx.commit()
+
+@wib.route('/clicker')
+def clicker_pagehandle():
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login_pagehandle'))
+    return flask.render_template('clicker.html')
+@wib.route('/click.json', methods=['POST'])
+def click_apihandle():
+  if 'snowflake' not in flask.session:
+    return flask.jsonify(False), 401
+
+  add_click(flask.session['snowflake'], 1)
+  return flask.jsonify(True)
+
+@wib.route('/clicks.json')
+def clicks_apihandle():
+  if 'snowflake' not in flask.session:
+    return flask.jsonify(0)
+  return flask.jsonify(get_clicks(flask.session['snowflake']))
